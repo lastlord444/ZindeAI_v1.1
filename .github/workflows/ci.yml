@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  validate-db:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_DB_PASSWORD: "files_ci_test_password"
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase (Local)
+        run: supabase start
+
+      - name: Wait for DB
+        run: sleep 10
+
+      - name: Run Seed Validation
+        env:
+          DATABASE_URL: "postgres://postgres:postgres@localhost:54322/postgres"
+        run: |
+          deno run -A tests/seed/validate_seeds.ts
+
+      - name: Run Plan Validation (Example)
+        run: |
+          # Create a dummy plan to test the validator
+          echo '{"name":"Test Plan","items":[{"day_of_week":1,"meal_type":"kahvalti","meal_id":"00000000-0000-0000-0000-000000000000","name":"Firik"}]}' > dummy_plan.json
+          deno run -A tests/plan/validate_plan.ts dummy_plan.json
