@@ -1,0 +1,4 @@
+project_id = "zindeai_v1_1"
+
+[analytics]
+enabled = false
