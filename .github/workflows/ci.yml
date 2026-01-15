@@ -29,6 +29,9 @@ jobs:
       - name: Wait for DB
         run: sleep 10
 
+      - name: Reset DB (Applying Migrations & Seeds)
+        run: supabase db reset --no-confirmation
+
       - name: Run Seed Validation
         env:
           DATABASE_URL: "postgres://postgres:postgres@localhost:54322/postgres"
