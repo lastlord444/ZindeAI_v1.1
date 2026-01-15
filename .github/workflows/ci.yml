@@ -30,7 +30,7 @@ jobs:
         run: sleep 10
 
       - name: Reset DB (Applying Migrations & Seeds)
-        run: supabase db reset --no-confirmation
+        run: printf "y\n" | supabase db reset
 
       - name: Run Seed Validation
         env:
