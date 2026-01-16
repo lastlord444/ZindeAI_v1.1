@@ -15,8 +15,8 @@ serve(async (req) => {
 
     try {
         // Dynamic imports for improved reliability during boot
-        const { PlanService } = await import("../../engine/src/services/planService.ts");
-        const { MealPicker } = await import("../../engine/src/services/mealPicker.ts");
+        const { PlanService } = await import("../_shared/engine/services/planService.ts");
+        const { MealPicker } = await import("../_shared/engine/services/mealPicker.ts");
 
         const requestJson = await req.json(); // Moved inside try block to catch parse errors
         const { user_id, week_start, goal_tag } = requestJson;
