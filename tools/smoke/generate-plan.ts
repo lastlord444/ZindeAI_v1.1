@@ -3,7 +3,7 @@ import Ajv from "https://esm.sh/ajv@8.12.0";
 import addFormats from "https://esm.sh/ajv-formats@2.1.1";
 
 const BASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
-const API_URL = `${BASE_URL}/functions/v1/generate-plan`;
+const API_URL = Deno.env.get("API_URL") || `${BASE_URL}/functions/v1/generate-plan`;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 if (!ANON_KEY) {
@@ -35,6 +35,8 @@ async function smokeTest() {
         week_start: "2026-01-19",
         goal_tag: "cut",
         budget_mode: "medium",
+        // prep_max_minutes is optional
+        // fish_preference is optional
     };
 
     try {
@@ -68,6 +70,38 @@ async function smokeTest() {
         }
 
         console.log("SMOKE TEST PASS (Contract Validated)");
+
+        // NEGATIVE TEST
+        console.log("Running Negative Test (Invalid Request)...");
+        const invalidPayload = {
+            user_id: "not-a-uuid",
+            // missing other fields
+        };
+
+        const resInvalid = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${ANON_KEY}`,
+                "apikey": ANON_KEY
+            },
+            body: JSON.stringify(invalidPayload)
+        });
+
+        if (resInvalid.status !== 422) {
+            console.error(`NEGATIVE TEST FAILED: Expected 422, got ${resInvalid.status}`);
+            const text = await resInvalid.text();
+            console.error(text);
+            Deno.exit(1);
+        }
+
+        const invalidData = await resInvalid.json();
+        if (invalidData.error !== "INVALID_REQUEST") {
+            console.error(`NEGATIVE TEST FAILED: Expected error 'INVALID_REQUEST', got '${invalidData.error}'`);
+            Deno.exit(1);
+        }
+        console.log("NEGATIVE TEST PASS (422 Received)");
+
     } catch (err) {
         console.error("FAILED: Connection error");
         console.error(err);
