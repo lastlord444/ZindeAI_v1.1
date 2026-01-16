@@ -23,11 +23,28 @@ jobs:
         with:
           version: 2.70.5
 
+      - name: Contract Check (AJV)
+        run: |
+          cd tools/contract-check
+          # install dependencies inline or check if package-lock is committed?
+          # Assuming we install fresh for check
+          npm install
+          node check.js
+
       - name: Start Supabase (Local)
         run: supabase start
 
       - name: Wait for DB
         run: sleep 10
+
+      - name: Smoke Test (Edge Function)
+        env:
+           # Default local anon key for Supabase
+           SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IjEyMyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjE2NTg1Mzc2LCJleHAiOjE5MzIxMjEzNzZ9.xxxx" 
+           API_URL: "http://127.0.0.1:54321/functions/v1/generate-plan"
+        run: |
+          # Use Deno to run smoke test script
+          deno run --allow-net --allow-env tools/smoke/generate-plan.ts
 
       - name: Reset DB (Applying Migrations & Seeds)
         run: printf "y\n" | supabase db reset
