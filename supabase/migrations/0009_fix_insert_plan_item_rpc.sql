@@ -1,8 +1,8 @@
--- 0007_plan_item_rpc.sql
--- Description: RPC function to safely insert plan items with automatic meal_type resolution and ownership verification.
+-- 0009_fix_insert_plan_item_rpc.sql
+-- Description: Fix insert_plan_item RPC with correct Security Definer and ownership checks
 
--- SECURITY DEFINER allows the function to run with the privileges of the creator (usually postgres/admin),
--- ensuring we can look up meal_type and insert correctly, assuming robust internal checks.
+DROP FUNCTION IF EXISTS public.insert_plan_item(uuid, int, uuid, boolean);
+
 CREATE OR REPLACE FUNCTION public.insert_plan_item(
     p_plan_id uuid,
     p_day_of_week int,
@@ -12,32 +12,32 @@ CREATE OR REPLACE FUNCTION public.insert_plan_item(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public -- Secure search path
+SET search_path = public
 AS $$
 DECLARE
     v_user_id uuid;
     v_meal_type public.meal_type;
     v_new_item_id uuid;
 BEGIN
-    -- 1. Ownership Check: Verify plan belongs to the current user
+    -- 1. Ownership Check
     SELECT user_id INTO v_user_id
     FROM public.plans
     WHERE id = p_plan_id;
 
     IF v_user_id IS NULL OR v_user_id != auth.uid() THEN
-        RAISE EXCEPTION 'Access Denied: You do not own this plan or it does not exist.';
+        RAISE EXCEPTION 'Plan bulunamadı veya erişim reddedildi';
     END IF;
 
-    -- 2. Fetch Meal Type from Meals table
+    -- 2. Meal Type Lookup
     SELECT meal_type INTO v_meal_type
     FROM public.meals
     WHERE id = p_meal_id;
 
     IF v_meal_type IS NULL THEN
-        RAISE EXCEPTION 'Invalid Meal: Meal ID % not found.', p_meal_id;
+        RAISE EXCEPTION 'Meal bulunamadı: %', p_meal_id;
     END IF;
 
-    -- 3. Insert Plan Item (Auto-populating meal_type for trigger enforcement)
+    -- 3. Insert
     INSERT INTO public.plan_items (
         plan_id,
         day_of_week,
@@ -49,7 +49,7 @@ BEGIN
         p_plan_id,
         p_day_of_week,
         p_meal_id,
-        v_meal_type, -- Resolved type
+        v_meal_type,
         p_is_consumed
     )
     RETURNING id INTO v_new_item_id;
