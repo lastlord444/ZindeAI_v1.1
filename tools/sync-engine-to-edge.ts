@@ -100,6 +100,37 @@ async function main() {
         }
     }
 
+    // 4. Sync Contracts
+    console.log("Syncing Contracts...");
+    const CONTRACT_SOURCE = "contracts/v1/generate_plan.request.schema.json";
+    const CONTRACT_TARGET = "supabase/functions/generate-plan/schema/generate_plan.request.schema.json";
+
+    if (await exists(CONTRACT_SOURCE)) {
+        if (isCheck) {
+            try {
+                const srcContent = await Deno.readTextFile(CONTRACT_SOURCE);
+                const destContent = await Deno.readTextFile(CONTRACT_TARGET);
+                if (srcContent !== destContent) {
+                    console.error(`[DRIFT] Contract mismatch: ${CONTRACT_TARGET}`);
+                    hasError = true;
+                }
+            } catch (e) {
+                if (e instanceof Deno.errors.NotFound) {
+                    console.error(`[DRIFT] Missing contract target: ${CONTRACT_TARGET}`);
+                    hasError = true;
+                } else {
+                    throw e;
+                }
+            }
+        } else {
+            await ensureDir(dirname(CONTRACT_TARGET));
+            await copy(CONTRACT_SOURCE, CONTRACT_TARGET, { overwrite: true });
+            // console.log(`Synced Contract: ${CONTRACT_TARGET}`);
+        }
+    } else {
+        console.warn(`Source contract missing: ${CONTRACT_SOURCE}`);
+    }
+
     if (isCheck && hasError) {
         console.error("Sync check FAILED. Run 'deno task sync' in engine/ directory or 'deno run -A tools/sync-engine-to-edge.ts' to fix.");
         Deno.exit(1);

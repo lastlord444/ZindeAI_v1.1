@@ -35,8 +35,6 @@ async function smokeTest() {
         week_start: "2026-01-19",
         goal_tag: "cut",
         budget_mode: "medium",
-        // prep_max_minutes is optional
-        // fish_preference is optional
     };
 
     try {
