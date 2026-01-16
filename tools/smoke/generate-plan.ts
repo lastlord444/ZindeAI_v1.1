@@ -1,6 +1,8 @@
 import { assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
 
-const API_URL = Deno.env.get("API_URL") || "http://localhost:54321/functions/v1/generate-plan";
+const BASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
+const API_URL = `${BASE_URL}/functions/v1/generate-plan`;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 
 // Simple smoke test: Call the endpoint and check it returns 200 and valid JSON
 async function smokeTest() {
@@ -11,8 +13,6 @@ async function smokeTest() {
         week_start: "2026-01-19",
         goal_tag: "cut",
         budget_mode: "medium",
-        // prep_max_minutes is optional
-        // fish_preference is optional
     };
 
     try {
@@ -20,7 +20,8 @@ async function smokeTest() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") || "mock-anon-key"}`
+                "Authorization": `Bearer ${ANON_KEY}`,
+                "apikey": ANON_KEY
             },
             body: JSON.stringify(payload)
         });

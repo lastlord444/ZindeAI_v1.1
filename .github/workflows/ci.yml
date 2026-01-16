@@ -37,13 +37,16 @@ jobs:
       - name: Wait for DB
         run: sleep 10
 
+      - name: Export Supabase Keys
+        run: |
+          supabase status -o json > status.json
+          echo "SUPABASE_ANON_KEY=$(jq -r .anon_key status.json)" >> $GITHUB_ENV
+          echo "SUPABASE_URL=$(jq -r .api_url status.json)" >> $GITHUB_ENV
+
       - name: Smoke Test (Edge Function)
-        env:
-           # Default local anon key for Supabase
-           SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IjEyMyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjE2NTg1Mzc2LCJleHAiOjE5MzIxMjEzNzZ9.xxxx" 
-           API_URL: "http://127.0.0.1:54321/functions/v1/generate-plan"
         run: |
           # Use Deno to run smoke test script
+          # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
           deno run --allow-net --allow-env tools/smoke/generate-plan.ts
 
       - name: Reset DB (Applying Migrations & Seeds)
