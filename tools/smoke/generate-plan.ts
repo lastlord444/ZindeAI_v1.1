@@ -2,7 +2,12 @@ import { assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
 
 const BASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
 const API_URL = `${BASE_URL}/functions/v1/generate-plan`;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+if (!ANON_KEY) {
+    console.error("Error: SUPABASE_ANON_KEY is missing.");
+    Deno.exit(1);
+}
 
 // Simple smoke test: Call the endpoint and check it returns 200 and valid JSON
 async function smokeTest() {

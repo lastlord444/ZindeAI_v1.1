@@ -39,9 +39,10 @@ jobs:
 
       - name: Export Supabase Keys
         run: |
-          supabase status -o json > status.json
-          echo "SUPABASE_ANON_KEY=$(jq -r .anon_key status.json)" >> $GITHUB_ENV
-          echo "SUPABASE_URL=$(jq -r .api_url status.json)" >> $GITHUB_ENV
+          supabase status -o json | tee status.json
+          echo "SUPABASE_ANON_KEY=$(jq -r '.anon_key // empty' status.json)" >> $GITHUB_ENV
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          test -n "$(jq -r '.anon_key // empty' status.json)" || (echo "anon_key missing" && cat status.json && exit 1)
 
       - name: Smoke Test (Edge Function)
         run: |
