@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { PlanService } from "../../engine/src/services/planService.ts";
-import { MealPicker } from "../../engine/src/services/mealPicker.ts";
-// Note: In real setup, we would import db client to fetch real meals.
-// For POC, using mocks inside the function if needed, or importing from engine if paths allow.
-// Assuming relative path import works in repo structure for local/ci, but DB fetch is better.
+
+// Note: Static imports are removed to prevent boot-time crashes if engine code is incompatible.
+// using dynamic imports inside the handler.
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -16,7 +14,12 @@ serve(async (req) => {
     }
 
     try {
-        const { user_id, week_start, goal_tag } = await req.json();
+        // Dynamic imports for improved reliability during boot
+        const { PlanService } = await import("../_shared/engine/services/planService.ts");
+        const { MealPicker } = await import("../_shared/engine/services/mealPicker.ts");
+
+        const requestJson = await req.json(); // Moved inside try block to catch parse errors
+        const { user_id, week_start, goal_tag } = requestJson;
 
         // In a real scenario, fetch meals from DB here
         // const { data: meals } = await supabase.from('meals').select('*');
@@ -39,10 +42,17 @@ serve(async (req) => {
             JSON.stringify(generatedPlan),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
-    } catch (error) {
+    } catch (error: any) {
         return new Response(
-            JSON.stringify({ error: error.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+            JSON.stringify({
+                error: "BOOT_RUNTIME_ERROR",
+                message: String(error?.message),
+                stack: String(error?.stack)
+            }),
+            {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 500
+            },
         )
     }
 })
