@@ -37,6 +37,17 @@ jobs:
       - name: Wait for DB
         run: sleep 10
 
+<<<<<<< HEAD
+=======
+      - name: Export Supabase Keys
+        run: |
+          supabase status -o json | tee status.json
+          cat status.json
+          ANON=$(jq -r '.anon_key // .ANON_KEY // .keys.anon_key // .keys.ANON_KEY // .api.anon_key // .api.ANON_KEY // empty' status.json)
+          echo "SUPABASE_ANON_KEY=$ANON" >> $GITHUB_ENV
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          test -n "$ANON" || (echo "anon_key missing" && exit 1)
+>>>>>>> 08ac284 (fix(ci): read anon key from supabase status json)
 
 
 
