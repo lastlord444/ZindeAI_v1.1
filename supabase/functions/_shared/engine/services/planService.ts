@@ -63,14 +63,16 @@ export class PlanService {
 
     private generateDay(targets: MacroTargets, rng: SeededRNG, dateStr: string, dayIndex: number): any[] {
         const mealTypes = ["breakfast", "snack1", "lunch", "snack2", "dinner", "snack3"];
-        const dayMeals = [];
+        const dayMeals: any[] = [];
+
+        // Track used IDs to prefer variety, but allow reuse if needed
+        // Since the requirement is strict 6 meals, we prioritize filling slots.
 
         for (const type of mealTypes) {
             // 1. Filter candidates
-            const candidates = this.picker.filter(type, "cut"); // Simplified logic as before
+            let candidates = this.picker.filter(type, "cut");
 
-            // 2. Stable Sort: Ensure deterministic order before random selection
-            // Sort by: ID (primary), then fallback to price/kcal if needed (though ID should be unique)
+            // 2. Stable Sort
             candidates.sort((a, b) => {
                 if (a.id < b.id) return -1;
                 if (a.id > b.id) return 1;
@@ -82,25 +84,71 @@ export class PlanService {
             if (candidates.length > 0) {
                 const index = rng.range(0, candidates.length);
                 meal = candidates[index];
+            } else {
+                // Try to find ANY meal from picker if type specific failed (should be rare)
+                // Or use a hardcoded fallback
+                meal = this.getFallbackMeal(type, rng);
             }
 
-            if (meal) {
-                dayMeals.push({
-                    meal_id: meal.id,
+            if (!meal) {
+                // Determine fallback if even fallback method failed (unlikely)
+                meal = {
+                    id: "fallback-" + type,
+                    kcal: 300, p: 10, c: 30, f: 10, price: 50,
                     meal_type: type,
-                    kcal: meal.kcal,
-                    p: meal.p,
-                    c: meal.c,
-                    f: meal.f,
-                    estimated_cost_try: meal.price,
-                    // Deterministic UUIDs for alternates
-                    alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
-                    alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
-                    flags: []
-                });
+                    tags: []
+                }
             }
+
+            dayMeals.push({
+                meal_id: meal.id,
+                meal_type: type,
+                kcal: meal.kcal,
+                p: meal.p,
+                c: meal.c,
+                f: meal.f,
+                estimated_cost_try: meal.price,
+                // Deterministic UUIDs for alternates
+                alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
+                alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
+                flags: meal.id.startsWith("fallback") ? ["fallback_used"] : []
+            });
         }
+
+        // Final Safety Check: Ensure exactly 6 items
+        while (dayMeals.length < 6) {
+            const type = mealTypes[dayMeals.length];
+            const meal = this.getFallbackMeal(type, rng);
+            dayMeals.push({
+                meal_id: meal.id,
+                meal_type: type,
+                kcal: meal.kcal,
+                p: meal.p,
+                c: meal.c,
+                f: meal.f,
+                estimated_cost_try: meal.price,
+                alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}-extra`),
+                alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}-extra`),
+                flags: ["filled_missing_slot"]
+            });
+        }
+
         return dayMeals;
+    }
+
+    private getFallbackMeal(type: string, rng: SeededRNG): Meal {
+        // Hardcoded minimal fallback to satisfy schema
+        // We use rng to make ID deterministic but unique enough
+        return {
+            id: `fallback-${this.generateDeterministicUUID(rng, "fallback")}`,
+            meal_type: type,
+            kcal: 250,
+            p: 15,
+            c: 25,
+            f: 8,
+            price: 40,
+            tags: ["fallback"]
+        };
     }
 
     // FNV-1a hash function for better collision avoidance than simple char code sum
@@ -114,8 +162,7 @@ export class PlanService {
     }
 
     private addDays(dateStr: string, days: number): string {
-        // Deterministic date math (avoiding TZ issues by sticking to strings if possible, 
-        // but simple Date addition is usually fine for local dates YYYY-MM-DD)
+        // Deterministic date math
         const date = new Date(dateStr);
         date.setDate(date.getDate() + days);
         return date.toISOString().split('T')[0];
@@ -126,8 +173,6 @@ export class PlanService {
      * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
      */
     private generateDeterministicUUID(rng: SeededRNG, context: string): string {
-        // We use the RNG to generate the random bits
-        // This ensures if the execution flow is same, UUIDs are same.
         const hex = "0123456789abcdef";
         let uuid = "";
         for (let i = 0; i < 36; i++) {
