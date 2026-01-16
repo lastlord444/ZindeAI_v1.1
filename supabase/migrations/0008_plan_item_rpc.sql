@@ -57,3 +57,5 @@ BEGIN
     RETURN v_new_item_id;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.insert_plan_item(uuid, int, uuid, boolean) TO authenticated;
