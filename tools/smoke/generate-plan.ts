@@ -100,6 +100,7 @@ async function smokeTest() {
         }
         console.log("NEGATIVE TEST PASS (422 Received)");
 
+
     } catch (err) {
         console.error("FAILED: Connection error");
         console.error(err);
