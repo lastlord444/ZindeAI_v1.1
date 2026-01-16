@@ -51,3 +51,32 @@ FROM meals m
 LEFT JOIN meal_alternatives ma ON m.id = ma.meal_id 
 WHERE ma.meal_id IS NULL;
 ```
+
+### 3. Plan Slot Tutarlılığı (Plan Slot Enforcement)
+
+`plan_items` tablosundaki `meal_type` kolonu, bir plan öğesi için hedeflenen öğün tipini (kahvaltı vb.) belirtir. Trigger, bu hedeflenen tip ile atanan yemeğin (`meals` tablosundaki) tipinin eşleşmesini zorunlu kılar.
+
+**Test Senaryosu 1: HATA Beklenir**
+Bir kahvaltı slotuna (meal_type='kahvalti') akşam yemeği (type='aksam') eklemeye çalışmak.
+```sql
+DO $$
+DECLARE
+    p_id uuid;
+    m_id uuid; -- Aksam yemegi ID'si
+BEGIN
+    INSERT INTO plans (user_id) SELECT id FROM profiles LIMIT 1 RETURNING id INTO p_id;
+    SELECT id INTO m_id FROM meals WHERE meal_type = 'aksam' LIMIT 1;
+    
+    INSERT INTO plan_items (plan_id, day_of_week, meal_id, meal_type)
+    VALUES (p_id, 1, m_id, 'kahvalti'); -- HATA: Slot expected kahvalti, but meal ... is aksam
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE '✅ Basarili: Trigger hatasi yakalandi: %', SQLERRM;
+END $$;
+```
+
+**Test Senaryosu 2: BAŞARI Beklenir**
+Doğru eşleşme veya meal_type NULL (trigger pas geçilir).
+```sql
+-- Doğru eşleşme
+INSERT INTO plan_items (..., meal_id, meal_type) VALUES (..., m_id, 'aksam'); -- OK
+```
