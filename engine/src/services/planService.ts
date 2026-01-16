@@ -70,10 +70,9 @@ export class PlanService {
 
         for (const type of mealTypes) {
             // 1. Filter candidates
-            const candidates = this.picker.filter(type, "cut"); // Simplified logic as before
+            let candidates = this.picker.filter(type, "cut");
 
-            // 2. Stable Sort: Ensure deterministic order before random selection
-            // Sort by: ID (primary), then fallback to price/kcal if needed (though ID should be unique)
+            // 2. Stable Sort
             candidates.sort((a, b) => {
                 if (a.id < b.id) return -1;
                 if (a.id > b.id) return 1;
@@ -85,23 +84,10 @@ export class PlanService {
             if (candidates.length > 0) {
                 const index = rng.range(0, candidates.length);
                 meal = candidates[index];
-            }
-
-            if (meal) {
-                dayMeals.push({
-                    meal_id: meal.id,
-                    meal_type: type,
-                    kcal: meal.kcal,
-                    p: meal.p,
-                    c: meal.c,
-                    f: meal.f,
-                    estimated_cost_try: meal.price,
-                    // Deterministic UUIDs for alternates
-                    alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
-                    alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
-                    flags: []
-                });
-
+            } else {
+                // Try to find ANY meal from picker if type specific failed (should be rare)
+                // Or use a hardcoded fallback
+                meal = this.getFallbackMeal(type, rng);
             }
 
             if (!meal) {
@@ -128,6 +114,7 @@ export class PlanService {
                 alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
                 flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
             });
+
         }
 
         // Final Safety Check: Ensure exactly 6 items
@@ -157,6 +144,7 @@ export class PlanService {
         // ID must be a valid UUID v4
         return {
             id: this.generateDeterministicUUID(rng, "fallback"),
+
             meal_type: type,
             kcal: 250,
             p: 15,
