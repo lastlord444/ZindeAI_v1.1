@@ -10,7 +10,7 @@ INSERT INTO public.ingredients (id, name, category, price_per100_try, is_fish) V
 ((SELECT prefix || '33' FROM ing_defaults)::uuid, 'Hindi Göğsü', 'protein', 20.0, false),
 ((SELECT prefix || '44' FROM ing_defaults)::uuid, 'Basmati Pirinç (Pişmiş)', 'carb', 5.0, false),
 ((SELECT prefix || '55' FROM ing_defaults)::uuid, 'Zeytinyağı', 'fat', 100.0, false)
-ON CONFLICT (id) DO NOTHING;
+
 
 WITH 
 ing_defaults AS (
@@ -22,7 +22,7 @@ INSERT INTO public.ingredient_macros (ingredient_id, per100_kcal, per100_p, per1
 ((SELECT prefix || '33' FROM ing_defaults)::uuid, 110, 23, 0, 1),
 ((SELECT prefix || '44' FROM ing_defaults)::uuid, 130, 2.7, 28, 0.3),
 ((SELECT prefix || '55' FROM ing_defaults)::uuid, 884, 0, 0, 100)
-ON CONFLICT (ingredient_id) DO NOTHING;
+
 
 -- ====== MEALS ======
 WITH
@@ -57,7 +57,7 @@ FROM (
     ('22222222-2222-2222-2222-222222222222'::uuid, 'Kıymalı Akşam Tabağı', 'DANA',    25, 3, ARRAY['seed','ci']::text[]),
     ('33333333-3333-3333-3333-333333333333'::uuid, 'Hindili Akşam Tabağı', 'HINDI',  18, 2, ARRAY['seed','ci']::text[])
 ) AS x(id, name, protein_source, prep_minutes, difficulty, tags)
-ON CONFLICT (id) DO NOTHING;
+
 
 -- ====== MEAL_ITEMS ======
 WITH 
@@ -77,7 +77,7 @@ INSERT INTO public.meal_items (meal_id, ingredient_id, grams) VALUES
 ('33333333-3333-3333-3333-333333333333', (SELECT prefix || '44' FROM ing_defaults)::uuid, 250),
 ('33333333-3333-3333-3333-333333333333', (SELECT prefix || '55' FROM ing_defaults)::uuid, 10
 )
-ON CONFLICT (meal_id, ingredient_id) DO NOTHING;
+
 
 -- ====== MEAL_ALTERNATIVES ======
 INSERT INTO public.meal_alternatives (meal_id, alt1_meal_id, alt2_meal_id)
@@ -85,7 +85,7 @@ VALUES
   ('11111111-1111-1111-1111-111111111111'::uuid, '22222222-2222-2222-2222-222222222222'::uuid, '33333333-3333-3333-3333-333333333333'::uuid),
   ('22222222-2222-2222-2222-222222222222'::uuid, '11111111-1111-1111-1111-111111111111'::uuid, '33333333-3333-3333-3333-333333333333'::uuid),
   ('33333333-3333-3333-3333-333333333333'::uuid, '11111111-1111-1111-1111-111111111111'::uuid, '22222222-2222-2222-2222-222222222222'::uuid)
-ON CONFLICT (meal_id) DO NOTHING;
+
 -- However, SEED runs AFTER Migrations.
 -- We must check what columns exist after ALL migrations.
 -- Migration History:
@@ -141,7 +141,7 @@ INSERT INTO public.ingredients (id, name, category, price_per100_try, is_fish) V
 ((SELECT prefix || '33' FROM ing_defaults)::uuid, 'Hindi Göğsü', 'protein', 20.0, false),
 ((SELECT prefix || '44' FROM ing_defaults)::uuid, 'Basmati Pirinç (Pişmiş)', 'carb', 5.0, false),
 ((SELECT prefix || '55' FROM ing_defaults)::uuid, 'Zeytinyağı', 'fat', 100.0, false)
-ON CONFLICT (id) DO NOTHING;
+
 
 WITH 
 ing_defaults AS (
@@ -153,7 +153,7 @@ INSERT INTO public.ingredient_macros (ingredient_id, per100_kcal, per100_p, per1
 ((SELECT prefix || '33' FROM ing_defaults)::uuid, 110, 23, 0, 1),
 ((SELECT prefix || '44' FROM ing_defaults)::uuid, 130, 2.7, 28, 0.3),
 ((SELECT prefix || '55' FROM ing_defaults)::uuid, 884, 0, 0, 100)
-ON CONFLICT (ingredient_id) DO NOTHING;
+
 
 -- ====== MEALS ======
 -- 0002 Table: meals (name, meal_type, goal_tag, meal_class, protein_source, prep_minutes, difficulty, tags)
