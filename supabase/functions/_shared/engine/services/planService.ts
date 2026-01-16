@@ -70,9 +70,10 @@ export class PlanService {
 
         for (const type of mealTypes) {
             // 1. Filter candidates
-            let candidates = this.picker.filter(type, "cut");
+            const candidates = this.picker.filter(type, "cut"); // Simplified logic as before
 
-            // 2. Stable Sort
+            // 2. Stable Sort: Ensure deterministic order before random selection
+            // Sort by: ID (primary), then fallback to price/kcal if needed (though ID should be unique)
             candidates.sort((a, b) => {
                 if (a.id < b.id) return -1;
                 if (a.id > b.id) return 1;
@@ -84,10 +85,23 @@ export class PlanService {
             if (candidates.length > 0) {
                 const index = rng.range(0, candidates.length);
                 meal = candidates[index];
-            } else {
-                // Try to find ANY meal from picker if type specific failed (should be rare)
-                // Or use a hardcoded fallback
-                meal = this.getFallbackMeal(type, rng);
+            }
+
+            if (meal) {
+                dayMeals.push({
+                    meal_id: meal.id,
+                    meal_type: type,
+                    kcal: meal.kcal,
+                    p: meal.p,
+                    c: meal.c,
+                    f: meal.f,
+                    estimated_cost_try: meal.price,
+                    // Deterministic UUIDs for alternates
+                    alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
+                    alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
+                    flags: []
+                });
+
             }
 
             if (!meal) {
@@ -164,7 +178,9 @@ export class PlanService {
     }
 
     private addDays(dateStr: string, days: number): string {
-        // Deterministic date math
+        // Deterministic date math (avoiding TZ issues by sticking to strings if possible, 
+        // but simple Date addition is usually fine for local dates YYYY-MM-DD)
+
         const date = new Date(dateStr);
         date.setDate(date.getDate() + days);
         return date.toISOString().split('T')[0];
@@ -175,6 +191,9 @@ export class PlanService {
      * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
      */
     private generateDeterministicUUID(rng: SeededRNG, context: string): string {
+        // We use the RNG to generate the random bits
+        // This ensures if the execution flow is same, UUIDs are same.
+
         const hex = "0123456789abcdef";
         let uuid = "";
         for (let i = 0; i < 36; i++) {
