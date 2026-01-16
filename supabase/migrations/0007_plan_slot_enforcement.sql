@@ -1,4 +1,4 @@
--- 0006_plan_slot_enforcement.sql
+-- 0007_plan_slot_enforcement.sql
 -- Description: Enforce that a plan item matches the intended meal type.
 -- Adds 'meal_type' column to plan_items (NULLABLE) to define the slot type.
 
