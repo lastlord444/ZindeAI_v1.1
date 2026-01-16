@@ -70,6 +70,7 @@ export class PlanService {
 
         for (const type of mealTypes) {
             // 1. Filter candidates
+<<<<<<< HEAD
             let candidates = this.picker.filter(type, "cut");
 
             // 2. Stable Sort
@@ -88,6 +89,39 @@ export class PlanService {
                 // Try to find ANY meal from picker if type specific failed (should be rare)
                 // Or use a hardcoded fallback
                 meal = this.getFallbackMeal(type, rng);
+=======
+            const candidates = this.picker.filter(type, "cut"); // Simplified logic as before
+
+            // 2. Stable Sort: Ensure deterministic order before random selection
+            // Sort by: ID (primary), then fallback to price/kcal if needed (though ID should be unique)
+            candidates.sort((a, b) => {
+                if (a.id < b.id) return -1;
+                if (a.id > b.id) return 1;
+                return 0;
+            });
+
+            // 3. Pick using RNG
+            let meal = null;
+            if (candidates.length > 0) {
+                const index = rng.range(0, candidates.length);
+                meal = candidates[index];
+            }
+
+            if (meal) {
+                dayMeals.push({
+                    meal_id: meal.id,
+                    meal_type: type,
+                    kcal: meal.kcal,
+                    p: meal.p,
+                    c: meal.c,
+                    f: meal.f,
+                    estimated_cost_try: meal.price,
+                    // Deterministic UUIDs for alternates
+                    alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
+                    alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
+                    flags: []
+                });
+>>>>>>> 0018ad5 (fix(engine): make plan generation deterministic (seeded rng + stable ordering))
             }
 
             if (!meal) {
@@ -137,6 +171,7 @@ export class PlanService {
         return dayMeals;
     }
 
+<<<<<<< HEAD
     private getFallbackMeal(type: string, rng: SeededRNG): Meal {
         // Hardcoded minimal fallback to satisfy schema
         // We use rng to make ID deterministic but unique enough
@@ -153,6 +188,8 @@ export class PlanService {
         };
     }
 
+=======
+>>>>>>> 0018ad5 (fix(engine): make plan generation deterministic (seeded rng + stable ordering))
     // FNV-1a hash function for better collision avoidance than simple char code sum
     private hashCode(str: string): number {
         let hash = 2166136261;
@@ -164,7 +201,12 @@ export class PlanService {
     }
 
     private addDays(dateStr: string, days: number): string {
+<<<<<<< HEAD
         // Deterministic date math
+=======
+        // Deterministic date math (avoiding TZ issues by sticking to strings if possible, 
+        // but simple Date addition is usually fine for local dates YYYY-MM-DD)
+>>>>>>> 0018ad5 (fix(engine): make plan generation deterministic (seeded rng + stable ordering))
         const date = new Date(dateStr);
         date.setDate(date.getDate() + days);
         return date.toISOString().split('T')[0];
@@ -175,6 +217,11 @@ export class PlanService {
      * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
      */
     private generateDeterministicUUID(rng: SeededRNG, context: string): string {
+<<<<<<< HEAD
+=======
+        // We use the RNG to generate the random bits
+        // This ensures if the execution flow is same, UUIDs are same.
+>>>>>>> 0018ad5 (fix(engine): make plan generation deterministic (seeded rng + stable ordering))
         const hex = "0123456789abcdef";
         let uuid = "";
         for (let i = 0; i < 36; i++) {
