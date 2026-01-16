@@ -37,21 +37,7 @@ jobs:
       - name: Wait for DB
         run: sleep 10
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      - name: Export Supabase Keys
-        run: |
-          supabase status -o json | tee status.json
-          cat status.json
-          ANON=$(jq -r '.anon_key // .ANON_KEY // .keys.anon_key // .keys.ANON_KEY // .api.anon_key // .api.ANON_KEY // empty' status.json)
-          echo "SUPABASE_ANON_KEY=$ANON" >> $GITHUB_ENV
-          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
-          test -n "$ANON" || (echo "anon_key missing" && exit 1)
->>>>>>> 08ac284 (fix(ci): read anon key from supabase status json)
 
-=======
->>>>>>> f3e5bf9 (chore(ci): move smoke test to end for better diagnostics)
 
 
       - name: Reset DB (Applying Migrations & Seeds)
@@ -62,6 +48,7 @@ jobs:
           # Ensure engine is synced to edge, fail if git diff is produced
           deno run -A tools/sync-engine-to-edge.ts
           git diff --exit-code
+
 
       - name: Run Seed Validation
         env:
@@ -94,8 +81,5 @@ jobs:
         run: |
           # Use Deno to run smoke test script
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
-<<<<<<< HEAD
           deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY tools/smoke/generate-plan.ts
-=======
-          deno run --allow-net --allow-env tools/smoke/generate-plan.ts
->>>>>>> f3e5bf9 (chore(ci): move smoke test to end for better diagnostics)
+
