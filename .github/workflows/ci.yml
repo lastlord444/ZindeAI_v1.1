@@ -76,4 +76,4 @@ jobs:
         run: |
           # Use Deno to run smoke test script
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
-          deno run --allow-net --allow-env tools/smoke/generate-plan.ts
+          deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY tools/smoke/generate-plan.ts
