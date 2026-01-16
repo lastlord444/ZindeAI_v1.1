@@ -1,0 +1,97 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "plan_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "week_start": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "days": {
+            "type": "array",
+            "minItems": 7,
+            "maxItems": 7,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "meals": {
+                        "type": "array",
+                        "minItems": 6,
+                        "maxItems": 6,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "meal_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "meal_type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "breakfast",
+                                        "snack1",
+                                        "lunch",
+                                        "snack2",
+                                        "dinner",
+                                        "snack3"
+                                    ]
+                                },
+                                "kcal": {
+                                    "type": "number"
+                                },
+                                "p": {
+                                    "type": "number"
+                                },
+                                "c": {
+                                    "type": "number"
+                                },
+                                "f": {
+                                    "type": "number"
+                                },
+                                "estimated_cost_try": {
+                                    "type": "number"
+                                },
+                                "alt1_meal_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "alt2_meal_id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                "flags": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "meal_id",
+                                "meal_type",
+                                "kcal"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "date",
+                    "meals"
+                ]
+            }
+        }
+    },
+    "required": [
+        "plan_id",
+        "week_start",
+        "days"
+    ],
+    "additionalProperties": false
+}

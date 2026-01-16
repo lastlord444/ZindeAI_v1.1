@@ -43,3 +43,9 @@ jobs:
           # Create a dummy plan to test the validator
           echo '{"name":"Test Plan","items":[{"day_of_week":1,"meal_type":"kahvalti","meal_id":"00000000-0000-0000-0000-000000000000","name":"Firik"}]}' > dummy_plan.json
           deno run -A tests/plan/validate_plan.ts dummy_plan.json
+
+      - name: Run Engine Tests (Deno)
+        run: |
+          cd engine
+          # We need to run tests relative to engine directory or adjust imports
+          deno test --allow-env tests/
