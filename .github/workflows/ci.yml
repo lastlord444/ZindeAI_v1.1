@@ -39,6 +39,7 @@ jobs:
 
 
 
+
       - name: Reset DB (Applying Migrations & Seeds)
         run: printf "y\n" | supabase db reset
 
