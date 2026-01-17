@@ -1,6 +1,8 @@
 {
     "tasks": {
-        "test": "deno test --allow-env --allow-read"
+        "test": "deno test --allow-env --allow-read",
+        "sync": "deno run -A ../tools/sync-engine-to-edge.ts",
+        "sync:check": "deno run -A ../tools/sync-engine-to-edge.ts --check"
     },
     "imports": {
         "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"

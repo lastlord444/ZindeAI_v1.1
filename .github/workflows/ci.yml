@@ -42,8 +42,11 @@ jobs:
       - name: Reset DB (Applying Migrations & Seeds)
         run: printf "y\n" | supabase db reset
 
-      - name: Sync Engine -> Edge (Check)
-        run: deno run -A tools/sync-engine-to-edge.ts --check
+      - name: Sync Engine -> Edge (Enforce)
+        run: |
+          # Ensure engine is synced to edge, fail if git diff is produced
+          deno run -A tools/sync-engine-to-edge.ts
+          git diff --exit-code
 
       - name: Run Seed Validation
         env:
