@@ -85,3 +85,19 @@ jobs:
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
           deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke,supabase/functions/generate-plan/schema --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,API_URL,ANON_KEY tools/smoke/generate-plan.ts
 
+      - name: Dump Edge Runtime logs (on smoke failure)
+        if: failure()
+        continue-on-error: true
+        run: |
+          echo "== docker ps =="
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+
+          echo "== guess edge runtime containers =="
+          docker ps --format "{{.Names}}" | grep -Ei "edge|runtime|functions|supabase" || true
+
+          echo "== edge runtime logs (tail) =="
+          for c in $(docker ps --format "{{.Names}}" | grep -Ei "edge|runtime|functions"); do
+            echo "----- logs: $c -----"
+            docker logs "$c" --tail 300 || true
+          done
+
