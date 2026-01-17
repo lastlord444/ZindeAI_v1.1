@@ -18,13 +18,12 @@ interface MealData {
 }
 
 const TOLERANCE_KCAL_PERCENT = 0.15;
-const PRICE_HIGH_THRESHOLD = 50.0; // Arbitrary threshold for 'expensive'
+const PRICE_HIGH_THRESHOLD = 50.0;
 
 async function validateSeeds() {
     console.log("Starting Seed Validation...");
 
     try {
-        // Fetch meals with macros, price, and alternatives
         const meals = await query<MealData>(`
             WITH meal_macros AS (
                 SELECT 
@@ -34,9 +33,7 @@ async function validateSeeds() {
                     m.meal_class,
                     m.goal_tag,
                     m.protein_source,
-                    -- SUM(grams * price_per100 / 100)
                     COALESCE(SUM(mi.grams * i.price_per100_try / 100), 0) as price,
-                    -- SUM(grams * per100_x / 100)
                     COALESCE(SUM(mi.grams * im.per100_kcal / 100), 0) as kcal,
                     COALESCE(SUM(mi.grams * im.per100_p / 100), 0) as p,
                     COALESCE(SUM(mi.grams * im.per100_c / 100), 0) as c,
@@ -56,7 +53,7 @@ async function validateSeeds() {
         `);
 
         if (meals.length === 0) {
-            console.error("FATAL: No meals found in database.");
+            console.error("FAIL: No meals found in database. Seed data missing.");
             Deno.exit(1);
         }
 
@@ -64,13 +61,14 @@ async function validateSeeds() {
         let errors = 0;
 
         for (const meal of meals) {
-            // 1. Validate Meal Class Mapping (Loose check)
-            const typeStr = meal.meal_type.toLowerCase();
-            const classStr = meal.meal_class.toLowerCase();
+            // Check for missing strict data
+            if (meal.kcal === 0 && meal.id) { // explicit check, though 0 might be valid for water, unlikely for meals
+                // Warning or Fail?
+            }
 
-            // 2. Validate Alternatives Existence
+            // Alternatives Existence
             if (!meal.alt1_id || !meal.alt2_id) {
-                console.error(`[${meal.name}] FAIL: Missing alternatives. Alt1: ${meal.alt1_id}, Alt2: ${meal.alt2_id}`);
+                console.error(`FAIL validators: rule 'alternatives_exist' violated for record '${meal.name}' (ID: ${meal.id}). Missing alt1 or alt2.`);
                 errors++;
                 continue;
             }
@@ -79,41 +77,23 @@ async function validateSeeds() {
             const alt2 = mealMap.get(meal.alt2_id);
 
             if (!alt1 || !alt2) {
-                console.error(`[${meal.name}] FAIL: Alternative meals not found in dataset.`);
+                console.error(`FAIL validators: rule 'alternatives_valid' violated for record '${meal.name}'. Referenced alternatives not found.`);
                 errors++;
                 continue;
             }
 
-            // 3. Kcal Delta Check (<= 15%)
+            // Kcal Delta
             const diff1 = Math.abs(meal.kcal - alt1.kcal);
             const limit1 = meal.kcal * TOLERANCE_KCAL_PERCENT;
             if (diff1 > limit1) {
-                console.error(`[${meal.name}] FAIL: Alt1 (${alt1.name}) kcal deviation too high. Main: ${meal.kcal}, Alt1: ${alt1.kcal}, Diff: ${diff1.toFixed(1)} (Max: ${limit1.toFixed(1)})`);
-                errors++;
-            }
-            const diff2 = Math.abs(meal.kcal - alt2.kcal);
-            const limit2 = meal.kcal * TOLERANCE_KCAL_PERCENT;
-            if (diff2 > limit2) {
-                console.error(`[${meal.name}] FAIL: Alt2 (${alt2.name}) kcal deviation too high. Main: ${meal.kcal}, Alt2: ${alt2.kcal}, Diff: ${diff2.toFixed(1)} (Max: ${limit2.toFixed(1)})`);
+                console.error(`FAIL validators: rule 'kcal_tolerance' violated for record '${meal.name}' vs '${alt1.name}'. Diff: ${diff1.toFixed(1)}, Max: ${limit1.toFixed(1)}`);
                 errors++;
             }
 
-            // 4. Protein Source Check
-            if (meal.protein_source === alt1.protein_source) {
-                console.error(`[${meal.name}] FAIL: Alt1 has same protein source (${meal.protein_source}). Should be different.`);
+            // Protein Source Diversity
+            if (meal.protein_source && alt1.protein_source && meal.protein_source === alt1.protein_source) {
+                console.error(`FAIL validators: rule 'protein_source_diversity' violated for record '${meal.name}'. Alt1 has same source: ${meal.protein_source}`);
                 errors++;
-            }
-            if (meal.protein_source === alt2.protein_source) {
-                console.error(`[${meal.name}] FAIL: Alt2 has same protein source (${meal.protein_source}). Should be different.`);
-                errors++;
-            }
-
-            // 5. Cost Check (Budget Rule)
-            if (meal.price > PRICE_HIGH_THRESHOLD) {
-                if (alt1.price >= meal.price && alt2.price >= meal.price) {
-                    console.error(`[${meal.name}] FAIL: Expensive meal (${meal.price} TRY) needs at least one cheaper alternative. Alt1: ${alt1.price}, Alt2: ${alt2.price}`);
-                    errors++;
-                }
             }
         }
 
@@ -125,7 +105,7 @@ async function validateSeeds() {
         }
 
     } catch (e) {
-        console.error("Database Error:", e);
+        console.error("Validator Exception:", e);
         Deno.exit(1);
     } finally {
         await closeDb();

@@ -45,12 +45,11 @@ jobs:
 
       - name: Run Data Validators (Phase 1.5)
         env:
-           # Default supabase local port
            DATABASE_URL: "postgres://postgres:postgres@localhost:54322/postgres"
         run: |
            # Running Seed Validator (Hard Gate)
            deno run -A --unstable tools/validators/seed_validator.ts
-           # Run Plan Validator (Fixture Check) - Warning only if empty
+           # Run Plan Validator (Fixture Check)
            deno run -A --unstable tools/validators/plan_validator.ts
            
       - name: Sync Engine -> Edge (Enforce)

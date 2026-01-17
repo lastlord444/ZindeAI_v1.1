@@ -21,14 +21,15 @@ export async function closeDb() {
     }
 }
 
-// Wrapper to mimic basic query behavior
+// Wrapper for queries with parameter binding support
+// T is the expected row type
 export async function query<T>(text: string, args: any[] = []): Promise<T[]> {
     await connectDb();
     try {
         const result = await client.queryObject<T>(text, args);
         return result.rows;
     } catch (e) {
-        console.error("Query Error:", e);
+        console.error(`Query Error: ${e.message}`);
         throw e;
     }
 }
