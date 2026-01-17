@@ -1,7 +1,6 @@
 -- 0009_fix_insert_plan_item_rpc.sql
--- Description: Fix insert_plan_item RPC with correct Security Definer and ownership checks
-
-DROP FUNCTION IF EXISTS public.insert_plan_item(uuid, int, uuid, boolean);
+-- Description: Fix insert_plan_item RPC to safely insert plan items with automatic meal_type resolution and ownership verification.
+-- This applies the logic that was erroneously added to 0008 in a mutable way.
 
 CREATE OR REPLACE FUNCTION public.insert_plan_item(
     p_plan_id uuid,
@@ -12,33 +11,32 @@ CREATE OR REPLACE FUNCTION public.insert_plan_item(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public -- Secure search path
 AS $$
 DECLARE
     v_user_id uuid;
     v_meal_type public.meal_type;
     v_new_item_id uuid;
 BEGIN
-    -- 1. Ownership Check
-    -- Plan must belong to the authenticated user
+    -- 1. Ownership Check: Verify plan belongs to the current user
     SELECT user_id INTO v_user_id
     FROM public.plans
     WHERE id = p_plan_id;
 
     IF v_user_id IS NULL OR v_user_id != auth.uid() THEN
-        RAISE EXCEPTION 'Plan bulunamadı veya erişim reddedildi';
+        RAISE EXCEPTION 'Access Denied: You do not own this plan or it does not exist.';
     END IF;
 
-    -- 2. Meal Type Lookup
+    -- 2. Fetch Meal Type from Meals table
     SELECT meal_type INTO v_meal_type
     FROM public.meals
     WHERE id = p_meal_id;
 
     IF v_meal_type IS NULL THEN
-        RAISE EXCEPTION 'Meal bulunamadı: %', p_meal_id;
+        RAISE EXCEPTION 'Invalid Meal: Meal ID % not found.', p_meal_id;
     END IF;
 
-    -- 3. Insert
+    -- 3. Insert Plan Item (Auto-populating meal_type for trigger enforcement)
     INSERT INTO public.plan_items (
         plan_id,
         day_of_week,
@@ -50,7 +48,7 @@ BEGIN
         p_plan_id,
         p_day_of_week,
         p_meal_id,
-        v_meal_type,
+        v_meal_type, -- Resolved type
         p_is_consumed
     )
     RETURNING id INTO v_new_item_id;
