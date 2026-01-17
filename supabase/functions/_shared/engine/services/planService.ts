@@ -92,8 +92,9 @@ export class PlanService {
 
             if (!meal) {
                 // Determine fallback if even fallback method failed (unlikely)
+                // Use a deterministic UUID for the ID based on day/type index
                 meal = {
-                    id: "fallback-" + type,
+                    id: this.generateDeterministicUUID(rng, `fallback-inline-${dayIndex}-${type}`),
                     kcal: 300, p: 10, c: 30, f: 10, price: 50,
                     meal_type: type,
 <<<<<<< HEAD
@@ -139,10 +140,14 @@ export class PlanService {
                 alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
                 alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
 <<<<<<< HEAD
+<<<<<<< HEAD
                 flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
 =======
                 flags: meal.id.startsWith("fallback") ? ["fallback_used"] : []
 >>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
+=======
+                flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
+>>>>>>> 8f2f9ce (fix(engine): emit RFC4122 v4 uuid meal_id for fallback fills)
             });
         }
 
@@ -171,6 +176,7 @@ export class PlanService {
         // Hardcoded minimal fallback to satisfy schema
         // We use rng to make ID deterministic but unique enough
 <<<<<<< HEAD
+<<<<<<< HEAD
         // ID must be a valid UUID v4
         return {
             id: this.generateDeterministicUUID(rng, "fallback"),
@@ -178,6 +184,11 @@ export class PlanService {
         return {
             id: `fallback-${this.generateDeterministicUUID(rng, "fallback")}`,
 >>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
+=======
+        // ID must be a valid UUID v4
+        return {
+            id: this.generateDeterministicUUID(rng, "fallback"),
+>>>>>>> 8f2f9ce (fix(engine): emit RFC4122 v4 uuid meal_id for fallback fills)
             meal_type: type,
             kcal: 250,
             p: 15,
