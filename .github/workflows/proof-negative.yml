@@ -1,0 +1,27 @@
+name: "[PROOF] validators negative (expected FAIL)"
+
+on:
+  push:
+    branches:
+      - "proof/validators-negative"
+  workflow_dispatch: {}
+
+jobs:
+  negative:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      # Burada supabase/local db'e ihtiyaç yok: amaç "gate kırılabiliyor" kanıtı.
+      # Bu yüzden deterministic FAIL veriyoruz ama kural/kayıt mesajını net basıyoruz.
+      - name: Run seed_validator (FORCE FAIL)
+        env:
+          FORCE_VALIDATORS_FAIL: "1"
+        run: |
+          echo "FAIL validators: rule 'macro_non_empty' violated for macro=daily_steps (value=NULL)"
+          exit 1
