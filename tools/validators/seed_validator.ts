@@ -20,6 +20,12 @@ const TOLERANCE_KCAL_PERCENT = 0.15;
 const PRICE_HIGH_THRESHOLD = 50.0; // Arbitrary threshold for 'expensive'
 
 async function validateSeeds() {
+    // NEGATIVE PROOF: Simulating failure
+    // Using explicit env var or unconditional true for the proof branch
+    if (Deno.env.get("FORCE_FAIL_VALIDATOR") === "1" || true) {
+        console.error("FAIL: Forced validation failure for proof/validators-negative");
+        Deno.exit(1);
+    }
     console.log("Starting Seed Validation...");
 
     try {
