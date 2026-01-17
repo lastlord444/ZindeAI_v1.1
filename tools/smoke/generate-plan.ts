@@ -2,9 +2,9 @@ import { assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import Ajv from "https://esm.sh/ajv@8.12.0";
 import addFormats from "https://esm.sh/ajv-formats@2.1.1";
 
-const BASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
-const API_URL = Deno.env.get("API_URL") || `${BASE_URL}/functions/v1/generate-plan`;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
+const API_URL = Deno.env.get("API_URL") ?? `${BASE_URL}/functions/v1/generate-plan`;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("ANON_KEY");
 
 if (!ANON_KEY) {
     console.error("Error: SUPABASE_ANON_KEY is missing.");
