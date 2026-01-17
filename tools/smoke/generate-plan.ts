@@ -2,12 +2,13 @@ import { assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
 import Ajv from "https://esm.sh/ajv@8.12.0";
 import addFormats from "https://esm.sh/ajv-formats@2.1.1";
 
-const BASE_URL = Deno.env.get("SUPABASE_URL") ?? "http://127.0.0.1:54321";
-const API_URL = Deno.env.get("API_URL") ?? `${BASE_URL}/functions/v1/generate-plan`;
+// Flexible env var loading
+const BASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("API_URL") ?? "http://127.0.0.1:54321";
+const ENDPOINT = `${BASE_URL}/functions/v1/generate-plan`;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("ANON_KEY");
 
 if (!ANON_KEY) {
-    console.error("Error: SUPABASE_ANON_KEY is missing.");
+    console.error("Error: SUPABASE_ANON_KEY (or ANON_KEY) is missing.");
     Deno.exit(1);
 }
 
@@ -26,7 +27,7 @@ async function loadSchema() {
 
 // Simple smoke test: Call the endpoint and check it returns 200 and valid JSON
 async function smokeTest() {
-    console.log(`Smoke testing ${API_URL}...`);
+    console.log(`Smoke testing ${ENDPOINT}...`);
     const schema = await loadSchema();
     const validate = ajv.compile(schema);
 
@@ -38,7 +39,7 @@ async function smokeTest() {
     };
 
     try {
-        const res = await fetch(API_URL, {
+        const res = await fetch(ENDPOINT, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -77,7 +78,7 @@ async function smokeTest() {
             // missing other fields
         };
 
-        const resInvalid = await fetch(API_URL, {
+        const resInvalid = await fetch(ENDPOINT, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

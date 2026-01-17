@@ -74,6 +74,7 @@ jobs:
           cat status.json
           ANON=$(jq -r '.anon_key // .ANON_KEY // .keys.anon_key // .keys.ANON_KEY // .api.anon_key // .api.ANON_KEY // empty' status.json)
           echo "SUPABASE_ANON_KEY=$ANON" >> $GITHUB_ENV
+          echo "ANON_KEY=$ANON" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           test -n "$ANON" || (echo "anon_key missing" && exit 1)
@@ -82,5 +83,5 @@ jobs:
         run: |
           # Use Deno to run smoke test script
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
-          deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,API_URL tools/smoke/generate-plan.ts
+          deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke,supabase/functions/generate-plan/schema --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,API_URL,ANON_KEY tools/smoke/generate-plan.ts
 
