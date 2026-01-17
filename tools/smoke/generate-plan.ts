@@ -58,6 +58,7 @@ async function smokeTest() {
         const data = await res.json();
         console.log("Response JSON received.");
 
+
         const valid = validate(data);
         if (!valid) {
             console.error("FAILED: Contract Validation Error");

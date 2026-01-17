@@ -64,6 +64,7 @@ serve(async (req) => {
                 { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
+
         const { user_id, week_start, goal_tag } = requestJson;
 
         // In a real scenario, fetch meals from DB here
