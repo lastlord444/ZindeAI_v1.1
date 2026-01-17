@@ -144,7 +144,6 @@ export class PlanService {
         // ID must be a valid UUID v4
         return {
             id: this.generateDeterministicUUID(rng, "fallback"),
-
             meal_type: type,
             kcal: 250,
             p: 15,
