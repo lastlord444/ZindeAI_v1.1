@@ -92,8 +92,9 @@ export class PlanService {
 
             if (!meal) {
                 // Determine fallback if even fallback method failed (unlikely)
+                // Use a deterministic UUID for the ID based on day/type index
                 meal = {
-                    id: "fallback-" + type,
+                    id: this.generateDeterministicUUID(rng, `fallback-inline-${dayIndex}-${type}`),
                     kcal: 300, p: 10, c: 30, f: 10, price: 50,
                     meal_type: type,
                     tags: []
@@ -111,7 +112,7 @@ export class PlanService {
                 // Deterministic UUIDs for alternates
                 alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
                 alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
-                flags: meal.id.startsWith("fallback") ? ["fallback_used"] : []
+                flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
             });
         }
 
@@ -139,8 +140,9 @@ export class PlanService {
     private getFallbackMeal(type: string, rng: SeededRNG): Meal {
         // Hardcoded minimal fallback to satisfy schema
         // We use rng to make ID deterministic but unique enough
+        // ID must be a valid UUID v4
         return {
-            id: `fallback-${this.generateDeterministicUUID(rng, "fallback")}`,
+            id: this.generateDeterministicUUID(rng, "fallback"),
             meal_type: type,
             kcal: 250,
             p: 15,

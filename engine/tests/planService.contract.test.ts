@@ -20,12 +20,17 @@ Deno.test("PlanService Contract: Guarantee 6 meals per day", () => {
 
     assertEquals(plan.days.length, 7, "Should have 7 days");
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
     plan.days.forEach((day: any, i: number) => {
         assertEquals(day.meals.length, 6, `Day ${i} should have exactly 6 meals`);
 
         // specific check for fallback content
         day.meals.forEach((meal: any) => {
-            assert(meal.meal_id.startsWith("fallback-"), "Should use fallback mechanism if no meals available");
+            assert(uuidRegex.test(meal.meal_id), `Meal ID ${meal.meal_id} should be valid RFC4122 v4 UUID`);
+            if (meal.flags.includes("fallback_used")) {
+                assert(meal.kcal === 250 || meal.kcal === 300, "Should have fallback nutritional values");
+            }
             assert(meal.flags.includes("fallback_used") || meal.flags.includes("filled_missing_slot"), "Should flag fallback usage");
         });
     });
