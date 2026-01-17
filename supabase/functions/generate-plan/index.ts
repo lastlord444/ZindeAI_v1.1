@@ -28,11 +28,41 @@ serve(async (req) => {
         // We vendored it to ./schema/generate_plan.request.schema.json
         let requestSchema;
         try {
-            const schemaText = await Deno.readTextFile(new URL("./schema/generate_plan.request.schema.json", import.meta.url));
+            // Use import.meta.url to resolve path relative to this module in the bundle
+            const schemaUrl = new URL("./schema/generate_plan.request.schema.json", import.meta.url);
+            // On Deno Deploy / Edge Runtime, URL path is often correct for readTextFile
+            // But fromFileUrl is safer for local/fs equivalence if protocol is file:
+            // However, Edge Runtime serves from http/https sometimes or bundle. 
+            // Standardizing on URL object usually works with Deno.readTextFile in recent runtime.
+            // Let's use the USER's requested strict pattern: fromFileUrl might fail if scheme is not file:.
+            // USER REQUESTED: import { fromFileUrl } ... const schemaPath = fromFileUrl(schemaUrl);
+            // I will use `fromFileUrl` if protocol is file, otherwise use pathname/href?
+            // User instruction: 
+            // const schemaUrl = new URL("./schema/generate_plan.request.schema.json", import.meta.url);
+            // const schemaPath = fromFileUrl(schemaUrl);
+
+            // Wait, import.meta.url in Edge Runtime might be file:///... 
+            // Let's implement exactly as requested.
+
+            const schemaUrl = new URL("./schema/generate_plan.request.schema.json", import.meta.url);
+            // Handle file protocol specifically to be safe with fromFileUrl
+            let schemaPath;
+            if (schemaUrl.protocol === "file:") {
+                const { fromFileUrl } = await import("https://deno.land/std@0.208.0/path/from_file_url.ts");
+                schemaPath = fromFileUrl(schemaUrl);
+            } else {
+                // If not file protocol (e.g. deployed bundle), readTextFile usually takes URL or we might need fetch if it's http
+                // But Deno.readTextFile requires local file system access. 
+                // In Supabase Edge Functions, assets are usually on file system.
+                // Fallback to path if not file:
+                schemaPath = new URL("./schema/generate_plan.request.schema.json", import.meta.url).pathname;
+            }
+
+            const schemaText = await Deno.readTextFile(schemaPath);
             requestSchema = JSON.parse(schemaText);
-        } catch (e) {
+        } catch (e: any) {
             console.error("Schema load error:", e);
-            throw new Error("Failed to load request validation schema");
+            throw new Error(`Failed to load request validation schema: ${e.message}`);
         }
 
         let requestJson;
