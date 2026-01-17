@@ -1,4 +1,6 @@
 import { assert } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import Ajv from "https://esm.sh/ajv@8.12.0";
+import addFormats from "https://esm.sh/ajv-formats@2.1.1";
 
 const BASE_URL = Deno.env.get("SUPABASE_URL") || "http://127.0.0.1:54321";
 const API_URL = `${BASE_URL}/functions/v1/generate-plan`;
@@ -9,9 +11,24 @@ if (!ANON_KEY) {
     Deno.exit(1);
 }
 
+const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
+
+async function loadSchema() {
+    try {
+        const schemaText = await Deno.readTextFile("contracts/v1/generate_plan.response.schema.json");
+        return JSON.parse(schemaText);
+    } catch (err) {
+        console.error("Error loading schema:", err);
+        Deno.exit(1);
+    }
+}
+
 // Simple smoke test: Call the endpoint and check it returns 200 and valid JSON
 async function smokeTest() {
     console.log(`Smoke testing ${API_URL}...`);
+    const schema = await loadSchema();
+    const validate = ajv.compile(schema);
 
     const payload = {
         user_id: "00000000-0000-0000-0000-000000000000",
@@ -41,12 +58,16 @@ async function smokeTest() {
         const data = await res.json();
         console.log("Response JSON received.");
 
-        if (!data.plan_id || !data.days) {
-            console.error("FAILED: Invalid response structure (missing plan_id or days)");
+        const valid = validate(data);
+        if (!valid) {
+            console.error("FAILED: Contract Validation Error");
+            validate.errors?.forEach(err => {
+                console.error(`Path: ${err.instancePath} | Message: ${err.message}`);
+            });
             Deno.exit(1);
         }
 
-        console.log("SMOKE TEST PASS");
+        console.log("SMOKE TEST PASS (Contract Validated)");
     } catch (err) {
         console.error("FAILED: Connection error");
         console.error(err);
