@@ -97,37 +97,10 @@ export class PlanService {
                     id: this.generateDeterministicUUID(rng, `fallback-inline-${dayIndex}-${type}`),
                     kcal: 300, p: 10, c: 30, f: 10, price: 50,
                     meal_type: type,
-<<<<<<< HEAD
-                    kcal: meal.kcal,
-                    p: meal.p,
-                    c: meal.c,
-                    f: meal.f,
-                    estimated_cost_try: meal.price,
-                    // Deterministic UUIDs for alternates
-                    alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
-                    alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
-                    flags: []
-                });
-
-            }
-
-            if (!meal) {
-                // Determine fallback if even fallback method failed (unlikely)
-                // Use a deterministic UUID for the ID based on day/type index
-                meal = {
-                    id: this.generateDeterministicUUID(rng, `fallback-inline-${dayIndex}-${type}`),
-                    kcal: 300, p: 10, c: 30, f: 10, price: 50,
-                    meal_type: type,
                     tags: []
                 }
             }
 
-=======
-                    tags: []
-                }
-            }
-
->>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
             dayMeals.push({
                 meal_id: meal.id,
                 meal_type: type,
@@ -139,16 +112,9 @@ export class PlanService {
                 // Deterministic UUIDs for alternates
                 alt1_meal_id: this.generateDeterministicUUID(rng, `alt1-${dayIndex}-${type}`),
                 alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
-<<<<<<< HEAD
-<<<<<<< HEAD
                 flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
-=======
-                flags: meal.id.startsWith("fallback") ? ["fallback_used"] : []
->>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
-=======
-                flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
->>>>>>> 8f2f9ce (fix(engine): emit RFC4122 v4 uuid meal_id for fallback fills)
             });
+
         }
 
         // Final Safety Check: Ensure exactly 6 items
@@ -175,20 +141,9 @@ export class PlanService {
     private getFallbackMeal(type: string, rng: SeededRNG): Meal {
         // Hardcoded minimal fallback to satisfy schema
         // We use rng to make ID deterministic but unique enough
-<<<<<<< HEAD
-<<<<<<< HEAD
         // ID must be a valid UUID v4
         return {
             id: this.generateDeterministicUUID(rng, "fallback"),
-=======
-        return {
-            id: `fallback-${this.generateDeterministicUUID(rng, "fallback")}`,
->>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
-=======
-        // ID must be a valid UUID v4
-        return {
-            id: this.generateDeterministicUUID(rng, "fallback"),
->>>>>>> 8f2f9ce (fix(engine): emit RFC4122 v4 uuid meal_id for fallback fills)
             meal_type: type,
             kcal: 250,
             p: 15,
@@ -210,13 +165,9 @@ export class PlanService {
     }
 
     private addDays(dateStr: string, days: number): string {
-<<<<<<< HEAD
         // Deterministic date math (avoiding TZ issues by sticking to strings if possible, 
         // but simple Date addition is usually fine for local dates YYYY-MM-DD)
 
-=======
-        // Deterministic date math
->>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
         const date = new Date(dateStr);
         date.setDate(date.getDate() + days);
         return date.toISOString().split('T')[0];
@@ -227,12 +178,9 @@ export class PlanService {
      * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
      */
     private generateDeterministicUUID(rng: SeededRNG, context: string): string {
-<<<<<<< HEAD
         // We use the RNG to generate the random bits
         // This ensures if the execution flow is same, UUIDs are same.
 
-=======
->>>>>>> 976dbc9 (fix(engine): guarantee 6 meals per day with deterministic fill fallback)
         const hex = "0123456789abcdef";
         let uuid = "";
         for (let i = 0; i < 36; i++) {
