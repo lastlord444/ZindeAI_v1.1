@@ -114,6 +114,7 @@ export class PlanService {
                 alt2_meal_id: this.generateDeterministicUUID(rng, `alt2-${dayIndex}-${type}`),
                 flags: (meal.tags && meal.tags.includes("fallback")) ? ["fallback_used"] : []
             });
+
         }
 
         // Final Safety Check: Ensure exactly 6 items
@@ -164,7 +165,9 @@ export class PlanService {
     }
 
     private addDays(dateStr: string, days: number): string {
-        // Deterministic date math
+        // Deterministic date math (avoiding TZ issues by sticking to strings if possible, 
+        // but simple Date addition is usually fine for local dates YYYY-MM-DD)
+
         const date = new Date(dateStr);
         date.setDate(date.getDate() + days);
         return date.toISOString().split('T')[0];
@@ -175,6 +178,9 @@ export class PlanService {
      * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
      */
     private generateDeterministicUUID(rng: SeededRNG, context: string): string {
+        // We use the RNG to generate the random bits
+        // This ensures if the execution flow is same, UUIDs are same.
+
         const hex = "0123456789abcdef";
         let uuid = "";
         for (let i = 0; i < 36; i++) {

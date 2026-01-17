@@ -1,0 +1,33 @@
+// @ts-nocheck
+export const REQUEST_SCHEMA = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "user_id": {
+            "type": "string",
+            "format": "uuid"
+        },
+        "week_start": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "goal_tag": {
+            "type": "string",
+            "enum": ["cut", "bulk", "maintain"]
+        },
+        "budget_mode": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+        },
+        "prep_max_minutes": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "fish_preference": {
+            "type": "string",
+            "enum": ["allow", "prefer", "avoid"]
+        }
+    },
+    "required": ["user_id", "week_start", "goal_tag", "budget_mode"],
+    "additionalProperties": false
+} as const;

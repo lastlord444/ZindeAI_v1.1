@@ -31,6 +31,7 @@ Deno.test("PlanService Contract: Guarantee 6 meals per day", () => {
             if (meal.flags.includes("fallback_used")) {
                 assert(meal.kcal === 250 || meal.kcal === 300, "Should have fallback nutritional values");
             }
+
             assert(meal.flags.includes("fallback_used") || meal.flags.includes("filled_missing_slot"), "Should flag fallback usage");
         });
     });

@@ -39,6 +39,7 @@ jobs:
 
 
 
+
       - name: Reset DB (Applying Migrations & Seeds)
         run: printf "y\n" | supabase db reset
 
@@ -47,6 +48,7 @@ jobs:
           # Ensure engine is synced to edge, fail if git diff is produced
           deno run -A tools/sync-engine-to-edge.ts
           git diff --exit-code
+
 
       - name: Run Seed Validation
         env:
@@ -72,11 +74,30 @@ jobs:
           cat status.json
           ANON=$(jq -r '.anon_key // .ANON_KEY // .keys.anon_key // .keys.ANON_KEY // .api.anon_key // .api.ANON_KEY // empty' status.json)
           echo "SUPABASE_ANON_KEY=$ANON" >> $GITHUB_ENV
+          echo "ANON_KEY=$ANON" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           test -n "$ANON" || (echo "anon_key missing" && exit 1)
 
       - name: Smoke Test (Edge Function)
         run: |
           # Use Deno to run smoke test script
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
-          deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY tools/smoke/generate-plan.ts
+          deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke,supabase/functions/generate-plan/schema --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,API_URL,ANON_KEY tools/smoke/generate-plan.ts
+
+      - name: Dump Edge Runtime logs (on smoke failure)
+        if: failure()
+        continue-on-error: true
+        run: |
+          echo "== docker ps =="
+          docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+
+          echo "== guess edge runtime containers =="
+          docker ps --format "{{.Names}}" | grep -Ei "edge|runtime|functions|supabase" || true
+
+          echo "== edge runtime logs (tail) =="
+          for c in $(docker ps --format "{{.Names}}" | grep -Ei "edge|runtime|functions"); do
+            echo "----- logs: $c -----"
+            docker logs "$c" --tail 300 || true
+          done
+
