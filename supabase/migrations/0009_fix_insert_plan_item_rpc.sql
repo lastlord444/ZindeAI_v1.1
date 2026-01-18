@@ -1,4 +1,4 @@
--- 0007_plan_item_rpc.sql
+﻿-- 0007_plan_item_rpc.sql
 -- Description: RPC function to safely insert plan items with automatic meal_type resolution and ownership verification.
 
 -- SECURITY DEFINER allows the function to run with the privileges of the creator (usually postgres/admin),
