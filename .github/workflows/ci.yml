@@ -21,27 +21,24 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.70.5
+          version: 2.72.8
 
       - name: Contract Check (AJV)
         run: |
           cd tools/contract-check
-          # install dependencies inline or check if package-lock is committed?
-          # Assuming we install fresh for check
           npm install
           node check.js
 
       - name: Start Supabase (Local)
-        run: supabase start
+        run: |
+          supabase stop --no-backup
+          supabase start
 
       - name: Wait for DB
-        run: sleep 10
-
-
-
+        run: sleep 15
 
       - name: Reset DB (Applying Migrations & Seeds)
-        run: printf "y\n" | supabase db reset
+        run: supabase db reset
 
       - name: Run Data Validators (Phase 1.5)
         env:
