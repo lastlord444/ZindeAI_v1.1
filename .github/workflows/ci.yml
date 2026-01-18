@@ -24,6 +24,15 @@ jobs:
           git rev-parse --is-inside-work-tree
           git show -s --oneline
 
+      - name: Guard Migration Encoding
+        run: |
+          # Fail if any SQL file contains NUL bytes (UTF-16 detection)
+          if grep -rP '\x00' supabase/migrations/*.sql; then
+            echo "FAIL: Migration files contain NUL bytes (likely UTF-16). Please save as UTF-8."
+            exit 1
+          fi
+          echo "PASS: No encoding issues detected."
+
       - uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x
