@@ -1,7 +1,8 @@
--- 0009_fix_insert_plan_item_rpc.sql
--- Description: Fix insert_plan_item RPC to safely insert plan items with automatic meal_type resolution and ownership verification.
--- This applies the logic that was erroneously added to 0008 in a mutable way.
+-- 0007_plan_item_rpc.sql
+-- Description: RPC function to safely insert plan items with automatic meal_type resolution and ownership verification.
 
+-- SECURITY DEFINER allows the function to run with the privileges of the creator (usually postgres/admin),
+-- ensuring we can look up meal_type and insert correctly, assuming robust internal checks.
 CREATE OR REPLACE FUNCTION public.insert_plan_item(
     p_plan_id uuid,
     p_day_of_week int,
