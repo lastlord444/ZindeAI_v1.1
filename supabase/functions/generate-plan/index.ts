@@ -18,19 +18,16 @@ serve(async (req) => {
         const { PlanService } = await import("../_shared/engine/services/planService.ts");
         const { MealPicker } = await import("../_shared/engine/services/mealPicker.ts");
 
-        // Import AJV dependencies dynamically or assume they are available via import map if configured, 
-        // but for now we use direct URL imports compatible with Edge Runtime
+        // Import AJV dependencies dynamically
         const Ajv = (await import("https://esm.sh/ajv@8.12.0")).default;
         const addFormats = (await import("https://esm.sh/ajv-formats@2.1.1")).default;
 
-        // Load Schema (embedded as TS module to avoid runtime I/O issues)
+        // Import Supabase Client
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
+
+        // Load Schema
         const { REQUEST_SCHEMA } = await import("./request_schema.ts");
         const requestSchema = REQUEST_SCHEMA;
-
-        /* 
-         * Previous file-read logic removed to prevent BOOT_RUNTIME_ERROR.
-         * Schema is now statically imported.
-         */
 
         let requestJson;
         try {
@@ -64,15 +61,46 @@ serve(async (req) => {
 
         const { user_id, week_start, goal_tag } = requestJson;
 
-        // In a real scenario, fetch meals from DB here
-        // const { data: meals } = await supabase.from('meals').select('*');
-        // For now, mocking filters to ensure it runs
-        const mockMeals = [
-            { id: "1be5c3fd-e9da-4127-8977-94a50d28362d", meal_type: "breakfast", tags: ["cut"], kcal: 400, p: 30, c: 40, f: 10, price: 50 },
-            // ... would need more mocks to fill 6 slots/day
-        ];
+        // Initialize Supabase Client
+        // Uses the authorization header from the request so RLS policies apply
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+        const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+        const authHeader = req.headers.get('Authorization');
 
-        const picker = new MealPicker(mockMeals as any[]);
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+            global: {
+                headers: { Authorization: authHeader! },
+            },
+        });
+
+        // Query meal_totals view
+        const { data: mealsData, error: dbError } = await supabase
+            .from('meal_totals')
+            .select('*');
+
+        if (dbError) {
+            throw new Error(`DB_QUERY_ERROR: ${dbError.message}`);
+        }
+
+        if (!mealsData || mealsData.length === 0) {
+            throw new Error("DB_EMPTY_ERROR: No meals found in database. Please ensure the database is seeded.");
+        }
+
+        // Map DB result to Meal interface
+        const meals = mealsData.map((m: any) => ({
+            id: m.meal_id,
+            meal_type: m.meal_type,
+            // Mapping goal_tag to tags array to satisfy filter logic. 
+            // Only 'goal_tag' is available in the view currently.
+            tags: [m.goal_tag],
+            kcal: Number(m.total_kcal),
+            p: Number(m.total_protein),
+            c: Number(m.total_carbs),
+            f: Number(m.total_fat),
+            price: Number(m.total_cost_try)
+        }));
+
+        const picker = new MealPicker(meals);
         const service = new PlanService(picker);
 
         const generatedPlan = service.generateWeek({
@@ -86,12 +114,19 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
     } catch (error: any) {
+        const isDev = Deno.env.get('ENVIRONMENT') === 'development' || Deno.env.get('SUPABASE_URL')?.includes('localhost');
+
+        const errorResponse: any = {
+            error: "RUNTIME_ERROR",
+            message: String(error?.message)
+        };
+
+        if (isDev) {
+            errorResponse.stack = String(error?.stack);
+        }
+
         return new Response(
-            JSON.stringify({
-                error: "BOOT_RUNTIME_ERROR",
-                message: String(error?.message),
-                stack: String(error?.stack)
-            }),
+            JSON.stringify(errorResponse),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 500
