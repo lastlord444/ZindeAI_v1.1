@@ -1,5 +1,4 @@
-﻿-- 0007_plan_item_rpc.sql
--- Description: RPC function to safely insert plan items with automatic meal_type resolution and ownership verification.
+-- 0009_fix_insert_plan_item_rpc.sql-- Description: RPC function to safely insert plan items with automatic meal_type resolution and ownership verification.
 
 -- SECURITY DEFINER allows the function to run with the privileges of the creator (usually postgres/admin),
 -- ensuring we can look up meal_type and insert correctly, assuming robust internal checks.
@@ -59,3 +58,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.insert_plan_item(uuid, int, uuid, boolean) TO authenticated;
+
