@@ -94,12 +94,12 @@ BEGIN
 
     -- 5. Insert Meal Items
     INSERT INTO public.meal_items (meal_id, ingredient_id, grams) VALUES
-    -- Meal 1 (Chicken Dinner)
-    (m1_id, i1_id, 150), (m1_id, i4_id, 250), (m1_id, i5_id, 10),
-    -- Meal 2 (Beef Dinner)
-    (m2_id, i2_id, 120), (m2_id, i4_id, 200),
-    -- Meal 3 (Turkey Dinner)
-    (m3_id, i3_id, 160), (m3_id, i4_id, 250), (m3_id, i5_id, 10),
+    -- Meal 1 (Chicken Dinner) -> ~513 kcal (Was 578)
+    (m1_id, i1_id, 150), (m1_id, i4_id, 200), (m1_id, i5_id, 10),
+    -- Meal 2 (Beef Dinner) -> ~484 kcal (Was 560)
+    (m2_id, i2_id, 100), (m2_id, i4_id, 180),
+    -- Meal 3 (Turkey Dinner) -> ~524 kcal (Was 589)
+    (m3_id, i3_id, 160), (m3_id, i4_id, 200), (m3_id, i5_id, 10),
     -- Meal 4 (Oats Breakfast) -> ~396 kcal
     (m4_id, i7_id, 70), (m4_id, i6_id, 80), 
     -- Meal 5 (Omelette Breakfast) -> ~406 kcal
