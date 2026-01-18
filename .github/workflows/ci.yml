@@ -94,6 +94,14 @@ jobs:
           # Env vars SUPABASE_ANON_KEY and SUPABASE_URL are now available globally
           deno run --allow-net=127.0.0.1:54321 --allow-read=contracts/v1,tools/smoke,supabase/functions/generate-plan/schema --allow-env=SUPABASE_URL,SUPABASE_ANON_KEY,API_URL,ANON_KEY tools/smoke/generate-plan.ts
 
+      - name: Verify No Mock Usage
+        run: |
+           if grep -r "mockMeals" supabase/functions/generate-plan/index.ts; then
+             echo "FAIL: mockMeals usage found in generate-plan/index.ts"
+             exit 1
+           fi
+           echo "PASS: No mockMeals usage found."
+
       - name: Dump Edge Runtime logs (on smoke failure)
         if: failure()
         continue-on-error: true
