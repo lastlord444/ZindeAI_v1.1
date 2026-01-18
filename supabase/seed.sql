@@ -84,7 +84,7 @@ BEGIN
     (m2_id, 'Kıymalı Akşam Tabağı', mt_aksam, gt, mc_main, 'DANA', 25, 3, ARRAY['seed','ci']),
     (m3_id, 'Hindili Akşam Tabağı', mt_aksam, gt, mc_main, 'HINDI', 18, 2, ARRAY['seed','ci']),
     -- Kahvalti
-    (m4_id, 'Yulaflı Kahvaltı', mt_kahvalti, gt, mc_breakfast, 'YUMURTA', 5, 1, ARRAY['seed','ci']),
+    (m4_id, 'Yulaflı Kahvaltı', mt_kahvalti, gt, mc_breakfast, 'YULAF', 5, 1, ARRAY['seed','ci']),
     (m5_id, 'Peynirli Omlet', mt_kahvalti, gt, mc_breakfast, 'YUMURTA', 10, 2, ARRAY['seed','ci']),
     (m6_id, 'Lorlu Kahvaltı', mt_kahvalti, gt, mc_breakfast, 'PEYNIR', 5, 1, ARRAY['seed','ci']),
     -- Ogle
@@ -100,14 +100,14 @@ BEGIN
     (m2_id, i2_id, 120), (m2_id, i4_id, 200),
     -- Meal 3 (Turkey Dinner)
     (m3_id, i3_id, 160), (m3_id, i4_id, 250), (m3_id, i5_id, 10),
-    -- Meal 4 (Oats Breakfast)
-    (m4_id, i7_id, 80), (m4_id, i6_id, 100), -- 2 Eggs (approx 100g)
-    -- Meal 5 (Omelette Breakfast)
+    -- Meal 4 (Oats Breakfast) -> ~396 kcal
+    (m4_id, i7_id, 70), (m4_id, i6_id, 80), 
+    -- Meal 5 (Omelette Breakfast) -> ~406 kcal
     (m5_id, i6_id, 150), -- 3 Eggs
-    (m5_id, i8_id, 30), -- Cheese
-    (m5_id, i5_id, 5), -- Oil
-    -- Meal 6 (Lor Breakfast)
-    (m6_id, i9_id, 150), (m6_id, i5_id, 5),
+    (m5_id, i8_id, 40), -- Cheese
+    (m5_id, i5_id, 8), -- Oil
+    -- Meal 6 (Lor Breakfast) -> ~426 kcal
+    (m6_id, i9_id, 250), (m6_id, i5_id, 20),
     -- Meal 7 (Chicken Lunch)
     (m7_id, i1_id, 120), (m7_id, i4_id, 200), (m7_id, i5_id, 5),
     -- Meal 8 (Beef Lunch)
