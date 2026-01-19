@@ -95,20 +95,12 @@ jobs:
           # We need to run tests relative to engine directory or adjust imports
           deno test --allow-env tests/
 
+          echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+          test -n "$ANON" || (echo "anon_key missing" && exit 1)
+
       - name: Run Service Layer Tests
         run: |
           deno test --allow-env --allow-net tests/service/
-
-      - name: Export Supabase Keys
-        run: |
-          supabase status -o json | tee status.json
-          cat status.json
-          ANON=$(jq -r '.anon_key // .ANON_KEY // .keys.anon_key // .keys.ANON_KEY // .api.anon_key // .api.ANON_KEY // empty' status.json)
-          echo "SUPABASE_ANON_KEY=$ANON" >> $GITHUB_ENV
-          echo "ANON_KEY=$ANON" >> $GITHUB_ENV
-          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
-          echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
-          test -n "$ANON" || (echo "anon_key missing" && exit 1)
 
       - name: Smoke Test (Edge Function)
         run: |
