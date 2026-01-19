@@ -95,6 +95,10 @@ jobs:
           # We need to run tests relative to engine directory or adjust imports
           deno test --allow-env tests/
 
+      - name: Run Service Layer Tests
+        run: |
+          deno test --allow-env --allow-net tests/service/
+
       - name: Export Supabase Keys
         run: |
           supabase status -o json | tee status.json
