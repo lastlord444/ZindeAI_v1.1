@@ -22,6 +22,7 @@ export class PlanItemService {
         // Validate inputs (Basic boundary validation)
         if (!item.plan_id) throw new Error("plan_id is required");
         if (!item.meal_id) throw new Error("meal_id is required");
+        if (!item.meal_type) throw new Error("meal_type is required");
 
         const { data, error } = await this.supabase.rpc("insert_plan_item", {
             p_plan_id: item.plan_id,

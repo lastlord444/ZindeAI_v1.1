@@ -110,6 +110,10 @@ jobs:
           echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           test -n "$ANON" || (echo "anon_key missing" && exit 1)
 
+      - name: Run Service Layer Tests
+        run: |
+          deno test --allow-env --allow-net tests/service/
+
       - name: Smoke Test (Edge Function)
         run: |
           # Use Deno to run smoke test script
