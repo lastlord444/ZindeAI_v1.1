@@ -53,7 +53,7 @@ Deno.test("PlanItemService - insertPlanItem - with FakeClient", async (t) => {
                 });
             },
             Error,
-            "plan_id is required"
+            "Validation failed: plan_id is required"
         );
     });
 

@@ -19,10 +19,7 @@ export class PlanItemService {
      * @returns The UUID of the inserted/updated plan item
      */
     async insertPlanItem(item: PlanItem): Promise<string> {
-        // Validate inputs (Basic boundary validation)
-        if (!item.plan_id) throw new Error("plan_id is required");
-        if (!item.meal_id) throw new Error("meal_id is required");
-        if (!item.meal_type) throw new Error("meal_type is required");
+        this.validateItem(item);
 
         const { data, error } = await this.supabase.rpc("insert_plan_item", {
             p_plan_id: item.plan_id,
@@ -39,5 +36,16 @@ export class PlanItemService {
         }
 
         return data as string;
+    }
+
+    private validateItem(item: PlanItem): void {
+        const errors: string[] = [];
+        if (!item.plan_id) errors.push("plan_id is required");
+        if (!item.meal_id) errors.push("meal_id is required");
+        if (!item.meal_type) errors.push("meal_type is required");
+
+        if (errors.length > 0) {
+            throw new Error(`Validation failed: ${errors.join(", ")}`);
+        }
     }
 }
