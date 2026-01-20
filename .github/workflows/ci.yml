@@ -17,6 +17,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Guard - Check for Orphan Gitlinks
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning index for gitlinks (mode 160000)..."
+          GL=$(git ls-files --stage | awk '$1==160000 {print $4}' || true)
+          if [ -n "${GL}" ]; then
+            echo "ERROR: gitlink entries found (these are orphan submodule gitlinks):"
+            echo "${GL}"
+            exit 1
+          fi
+          echo "OK: no gitlink entries."
+
       - name: Git Config & Fetch
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
