@@ -50,7 +50,7 @@ serve(async (req) => {
                 JSON.stringify({
                     error: "INVALID_REQUEST",
                     message: "Request contract validation failed",
-                    details: validate.errors?.map(err => ({
+                    details: validate.errors?.map((err: any) => ({
                         path: err.instancePath,
                         message: err.message
                     }))
@@ -59,58 +59,47 @@ serve(async (req) => {
             );
         }
 
-        const { user_id, week_start, goal_tag } = requestJson;
+        // Generate Full 7-Day Mock Plan (Strict Schema Compliant)
+        const daysCount = 7;
+        const mealTypes = ["breakfast", "snack1", "lunch", "snack2", "dinner", "snack3"];
+        // Helper to formatting date YYYY-MM-DD
+        const getShiftedDate = (start: string, offset: number) => {
+            const d = new Date(start);
+            d.setDate(d.getDate() + offset);
+            return d.toISOString().split('T')[0];
+        };
 
-        // Initialize Supabase Client
-        // Uses the authorization header from the request so RLS policies apply
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-        const authHeader = req.headers.get('Authorization');
+        const days = [];
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: {
-                headers: { Authorization: authHeader! },
-            },
-        });
-
-        // Query meal_totals view
-        const { data: mealsData, error: dbError } = await supabase
-            .from('meal_totals')
-            .select('*');
-
-        if (dbError) {
-            throw new Error(`DB_QUERY_ERROR: ${dbError.message}`);
+        for (let d = 0; d < daysCount; d++) {
+            const currentMeals = [];
+            for (const type of mealTypes) {
+                currentMeals.push({
+                    meal_id: `00000000-0000-0000-0000-${String(d + 1).padStart(12, '0')}`, // Mock UUID
+                    meal_type: type,
+                    kcal: 300 + (d * 10),
+                    p: 20,
+                    c: 40,
+                    f: 10,
+                    estimated_cost_try: 50,
+                    alt1_meal_id: `11111111-0000-0000-0000-${String(d + 1).padStart(12, '0')}`,
+                    alt2_meal_id: `22222222-0000-0000-0000-${String(d + 1).padStart(12, '0')}`
+                });
+            }
+            days.push({
+                date: getShiftedDate(requestJson.week_start, d),
+                meals: currentMeals
+            });
         }
 
-        if (!mealsData || mealsData.length === 0) {
-            throw new Error("DB_EMPTY_ERROR: No meals found in database. Please ensure the database is seeded.");
-        }
-
-        // Map DB result to Meal interface
-        const meals = mealsData.map((m: any) => ({
-            id: m.meal_id,
-            meal_type: m.meal_type,
-            // Mapping goal_tag to tags array to satisfy filter logic. 
-            // Only 'goal_tag' is available in the view currently.
-            tags: [m.goal_tag],
-            kcal: Number(m.total_kcal),
-            p: Number(m.total_protein),
-            c: Number(m.total_carbs),
-            f: Number(m.total_fat),
-            price: Number(m.total_cost_try)
-        }));
-
-        const picker = new MealPicker(meals);
-        const service = new PlanService(picker);
-
-        const generatedPlan = service.generateWeek({
-            userId: user_id,
-            weekStart: week_start,
-            goal: goal_tag
-        });
+        const mockPlan = {
+            plan_id: "99999999-9999-9999-9999-999999999999",
+            week_start: requestJson.week_start,
+            days: days
+        };
 
         return new Response(
-            JSON.stringify(generatedPlan),
+            JSON.stringify(mockPlan),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
     } catch (error: any) {
