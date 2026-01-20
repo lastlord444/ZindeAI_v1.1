@@ -59,29 +59,34 @@ serve(async (req) => {
             );
         }
 
-        // Minimal Hardcoded JSON Response (Contract Compliant)
+        // Generate Full 7-Day Mock Plan (Contract Compliant)
+        const days = 7;
+        const mealTypes = ["kahvalti", "ara1", "ogle", "ara2", "aksam", "ara3"];
+        const items = [];
+
+        for (let d = 1; d <= days; d++) {
+            for (const type of mealTypes) {
+                items.push({
+                    day_of_week: d,
+                    meal_type: type,
+                    meal_id: `meal-${d}-${type}`,
+                    name: `Mock Meal ${type} Day ${d}`,
+                    calories: 300 + (d * 10),
+                    alt1_meal_id: `alt1-${d}-${type}`,
+                    alt2_meal_id: `alt2-${d}-${type}`,
+                    is_consumed: false
+                });
+            }
+        }
+
         const mockPlan = {
-            id: "mock-plan-id",
+            id: "mock-plan-full-week",
             user_id: requestJson.user_id,
             week_start: requestJson.week_start,
-            items: [
-                {
-                    day_of_week: 1,
-                    meal_type: "kahvalti",
-                    meal_id: "meal-1",
-                    name: "Minimal Yulaf",
-                    calories: 300
-                },
-                {
-                    day_of_week: 1,
-                    meal_type: "ogle",
-                    meal_id: "meal-2",
-                    name: "Minimal Tavuk",
-                    calories: 500
-                }
-            ],
+            items: items,
             meta: {
-                generated_at: new Date().toISOString()
+                generated_at: new Date().toISOString(),
+                note: "Full 7x6 mock with alternates"
             }
         };
 
