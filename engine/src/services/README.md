@@ -1,5 +1,11 @@
 # Service Layer (Bootstrap)
 
+## Development Setup (VSCode)
+1. Install **Deno** extension (`denoland.vscode-deno`).
+2. Workspace automatically enables Deno via `.vscode/settings.json`.
+3. If errors persist: Command Palette -> `Deno: Restart Language Server`.
+4. *Note: These settings are local-only and do not affect CI.*
+
 This directory contains the foundational contracts for the ZindeAI Service Layer.
 
 ## Core Contracts
