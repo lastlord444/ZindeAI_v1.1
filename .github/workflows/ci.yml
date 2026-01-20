@@ -17,12 +17,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Git Config & Fetch
+      - name: Git Safe Directory
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --no-tags origin main:refs/remotes/origin/main || git fetch origin main
-          git rev-parse --is-inside-work-tree
-          git show -s --oneline
 
       - name: Guard Migration Encoding
         run: |
@@ -95,9 +92,7 @@ jobs:
           # We need to run tests relative to engine directory or adjust imports
           deno test --allow-env tests/
 
-      - name: Run Service Layer Tests
-        run: |
-          deno test --allow-env --allow-net tests/service/
+
 
       - name: Export Supabase Keys
         run: |
