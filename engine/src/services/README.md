@@ -13,5 +13,5 @@ This directory contains the foundational contracts for the ZindeAI Service Layer
 4. **Single Entrypoint**: Import via `services/index.ts`.
 5. **Error Contract**: Never throw exceptions for partial failures; return `ServiceResult` with error.
 
-## Future Work
-- Migration of `planItemService.ts` and `mealService.ts` to implement these contracts.
+## Progress
+- Step 3: First adoption completed in `PlanItemService`. External API unchanged.
