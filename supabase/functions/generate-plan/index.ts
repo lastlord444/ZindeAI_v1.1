@@ -50,7 +50,7 @@ serve(async (req) => {
                 JSON.stringify({
                     error: "INVALID_REQUEST",
                     message: "Request contract validation failed",
-                    details: validate.errors?.map(err => ({
+                    details: validate.errors?.map((err: any) => ({
                         path: err.instancePath,
                         message: err.message
                     }))
@@ -59,35 +59,43 @@ serve(async (req) => {
             );
         }
 
-        // Generate Full 7-Day Mock Plan (Contract Compliant)
-        const days = 7;
-        const mealTypes = ["kahvalti", "ara1", "ogle", "ara2", "aksam", "ara3"];
-        const items = [];
+        // Generate Full 7-Day Mock Plan (Strict Schema Compliant)
+        const daysCount = 7;
+        const mealTypes = ["breakfast", "snack1", "lunch", "snack2", "dinner", "snack3"];
+        // Helper to formatting date YYYY-MM-DD
+        const getShiftedDate = (start: string, offset: number) => {
+            const d = new Date(start);
+            d.setDate(d.getDate() + offset);
+            return d.toISOString().split('T')[0];
+        };
 
-        for (let d = 1; d <= days; d++) {
+        const days = [];
+
+        for (let d = 0; d < daysCount; d++) {
+            const currentMeals = [];
             for (const type of mealTypes) {
-                items.push({
-                    day_of_week: d,
+                currentMeals.push({
+                    meal_id: `00000000-0000-0000-0000-${String(d + 1).padStart(12, '0')}`, // Mock UUID
                     meal_type: type,
-                    meal_id: `meal-${d}-${type}`,
-                    name: `Mock Meal ${type} Day ${d}`,
-                    calories: 300 + (d * 10),
-                    alt1_meal_id: `alt1-${d}-${type}`,
-                    alt2_meal_id: `alt2-${d}-${type}`,
-                    is_consumed: false
+                    kcal: 300 + (d * 10),
+                    p: 20,
+                    c: 40,
+                    f: 10,
+                    estimated_cost_try: 50,
+                    alt1_meal_id: `11111111-0000-0000-0000-${String(d + 1).padStart(12, '0')}`,
+                    alt2_meal_id: `22222222-0000-0000-0000-${String(d + 1).padStart(12, '0')}`
                 });
             }
+            days.push({
+                date: getShiftedDate(requestJson.week_start, d),
+                meals: currentMeals
+            });
         }
 
         const mockPlan = {
-            id: "mock-plan-full-week",
-            user_id: requestJson.user_id,
+            plan_id: "99999999-9999-9999-9999-999999999999",
             week_start: requestJson.week_start,
-            items: items,
-            meta: {
-                generated_at: new Date().toISOString(),
-                note: "Full 7x6 mock with alternates"
-            }
+            days: days
         };
 
         return new Response(
