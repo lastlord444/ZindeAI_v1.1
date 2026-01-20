@@ -10,6 +10,8 @@ export interface PlanItem {
     is_consumed?: boolean;
 }
 
+import { ServiceResult, ok, err, isErr } from "./index.ts";
+
 export class PlanItemService {
     constructor(private supabase: SupabaseClient) { }
 
@@ -19,7 +21,20 @@ export class PlanItemService {
      * @returns The UUID of the inserted/updated plan item
      */
     async insertPlanItem(item: PlanItem): Promise<string> {
-        this.validateItem(item);
+        const result = await this.insertPlanItem_impl(item);
+        if (isErr(result)) {
+            // Maintain legacy behavior: Throw Error with message
+            throw new Error(result.error.message);
+        }
+        return result.data;
+    }
+
+    /**
+     * Internal implementation using ServiceResult pattern.
+     */
+    async insertPlanItem_impl(item: PlanItem): Promise<ServiceResult<string>> {
+        const validation = this.validateItem(item);
+        if (isErr(validation)) return validation;
 
         const { data, error } = await this.supabase.rpc("insert_plan_item", {
             p_plan_id: item.plan_id,
@@ -32,20 +47,21 @@ export class PlanItemService {
         });
 
         if (error) {
-            throw new Error(`RPC insert_plan_item failed: ${error.message}`);
+            return err("RPC_ERROR", `RPC insert_plan_item failed: ${error.message}`);
         }
 
-        return data as string;
+        return ok(data as string);
     }
 
-    private validateItem(item: PlanItem): void {
+    private validateItem(item: PlanItem): ServiceResult<void> {
         const errors: string[] = [];
         if (!item.plan_id) errors.push("plan_id is required");
         if (!item.meal_id) errors.push("meal_id is required");
         if (!item.meal_type) errors.push("meal_type is required");
 
         if (errors.length > 0) {
-            throw new Error(`Validation failed: ${errors.join(", ")}`);
+            return err("VALIDATION_FAILED", `Validation failed: ${errors.join(", ")}`);
         }
+        return ok(undefined);
     }
 }
