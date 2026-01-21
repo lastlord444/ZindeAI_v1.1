@@ -130,7 +130,8 @@ serve(async (req) => {
                     f: Number(m.total_fat || 0),
                     estimated_cost_try: Number(m.total_cost_try || 0),
                     alt1_meal_id: alt1.meal_id,
-                    alt2_meal_id: alt2.meal_id
+                    alt2_meal_id: alt2.meal_id,
+                    flags: [mainMeal.price_tier] // Expose tier for UI badge
                 });
             }
             days.push({
