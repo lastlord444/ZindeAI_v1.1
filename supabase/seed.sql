@@ -146,7 +146,15 @@ BEGIN
                 _current_mc := mc_breakfast;
             ELSIF _mt = mt_snack1 OR _mt = mt_snack2 OR _mt = mt_snack3 THEN
                  _current_mc := mc_snack;
+            ELSIF _mt = mt_snack1 OR _mt = mt_snack2 OR _mt = mt_snack3 THEN
+                 _current_mc := mc_snack;
             ELSE
+                 -- Default safety fallback
+                 _current_mc := mc_main;
+            END IF;
+            
+            -- Ultimate Safety Check
+            IF _current_mc IS NULL THEN
                  _current_mc := mc_main;
             END IF;
 
