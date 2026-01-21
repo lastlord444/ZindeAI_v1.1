@@ -123,10 +123,14 @@ jobs:
           echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           test -n "$ANON" || (echo "anon_key missing" && exit 1)
 
-      - name: Run Price Tier Validator
+      - name: Run Price Tier Validator (SQL)
+        env:
+           # Using local Supabase explicit URL for CI environment
+           DATABASE_URL: "postgres://postgres:postgres@localhost:54322/postgres"
         run: |
-           # Requires SUPABASE_URL and SUPABASE_ANON_KEY (exported above)
-           deno run -A --allow-net --allow-env tools/seed-validator/price_tier_check.ts
+           # Retry logic or wait for ready? 'Wait for DB' step already exists.
+           # Using the same connection string as other validators.
+           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tools/validators/price_tier_check.sql
 
       - name: Run Service Layer Tests
         run: |
