@@ -123,6 +123,11 @@ jobs:
           echo "API_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
           test -n "$ANON" || (echo "anon_key missing" && exit 1)
 
+      - name: Run Price Tier Validator
+        run: |
+           # Requires SUPABASE_URL and SUPABASE_ANON_KEY (exported above)
+           deno run -A --allow-net --allow-env tools/seed-validator/price_tier_check.ts
+
       - name: Run Service Layer Tests
         run: |
           deno test --allow-env --allow-net tests/service/
