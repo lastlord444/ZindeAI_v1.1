@@ -46,11 +46,12 @@ serve(async (req) => {
             );
         }
 
-        const tariffMode = requestJson.tariff_mode || 'normal';
+        // --- PR-2 Update: Tariff Mode Logic ---
+        const tariffMode = requestJson.tariff_mode || 'normal'; // Default normal
         const goalTag = requestJson.goal_tag;
         const daysCount = 7;
         const mealTypes = ["breakfast", "snack1", "lunch", "snack2", "dinner", "snack3"];
-        // Helper mapping for DB meal_type
+
         const dbMealTypes: Record<string, string> = {
             "breakfast": "kahvalti",
             "snack1": "ara_ogun_1",
@@ -63,6 +64,8 @@ serve(async (req) => {
 
         const selectMeal = async (mType: string, excludedIds: string[] = []) => {
             const dbType = dbMealTypes[mType];
+            // Query meals_with_cost_v view
+            // Filter by: goal_tag, meal_type, price_tier (tariffMode)
             let query = supabase
                 .from('meals_with_cost_v')
                 .select('meal_id, meal_cost_try, price_tier')
@@ -74,20 +77,16 @@ serve(async (req) => {
                 query = query.not('meal_id', 'in', `(${excludedIds.join(',')})`);
             }
 
-            // Random selection via limit (MVP)
-            // Ideally we use RPC or improved random, but here we pick first or random?
-            // Since we can't easily random sort in view without RPC, we fetch first simple.
-            // Or fetch few and pick random in code.
+            // Random MVP selection: fetch limit 10, pick one.
             const { data, error } = await query.limit(10);
 
             if (error) throw error;
             if (!data || data.length === 0) {
-                // Fallback: try finding any meal to avoid crash, or throw?
-                // Throwing allows us to see missing data issues.
-                throw new Error(`No meals found for ${goalTag}/${dbType}/${tariffMode}`);
+                // Fallback or Fail?
+                // Fail explicit is better for debugging based on spec.
+                throw new Error(`Insufficient meals for ${goalTag}/${dbType}/${tariffMode}`);
             }
 
-            // Pick random
             return data[Math.floor(Math.random() * data.length)];
         };
 
@@ -102,26 +101,25 @@ serve(async (req) => {
         for (let d = 0; d < daysCount; d++) {
             const currentMeals = [];
             for (const type of mealTypes) {
+                // Select Main Meal
                 const mainMeal = await selectMeal(type);
+                // Select Alt1 (exclude main)
                 const alt1 = await selectMeal(type, [mainMeal.meal_id]);
+                // Select Alt2 (exclude main + alt1)
                 const alt2 = await selectMeal(type, [mainMeal.meal_id, alt1.meal_id]);
 
-                // We need extended details (kcal etc) which might not be in the view?
-                // The schema response requires kcal, p, c, f, etc.
-                // The view only has cost and tier.
-                // We need to fetch details from `meal_totals` view maybe?
-                // Or join/fetch.
-                // Let's assume we fetch details from `meal_totals` for the selected IDs.
-
+                // Fetch details (macro/kcal) from meal_totals view for these IDs
+                // Using .in() is more efficient than loop
+                const ids = [mainMeal.meal_id, alt1.meal_id, alt2.meal_id];
                 const { data: details } = await supabase
                     .from('meal_totals')
                     .select('*')
-                    .in('meal_id', [mainMeal.meal_id, alt1.meal_id, alt2.meal_id]);
+                    .in('meal_id', ids);
 
-                // Map details back
                 const findDetail = (id: string) => details?.find((x: any) => x.meal_id === id) || {};
-
                 const m = findDetail(mainMeal.meal_id);
+                // Note: Contract requires item details from 'm', plus alt IDs.
+                // We don't embed full alt objects, just IDs.
 
                 currentMeals.push({
                     meal_id: mainMeal.meal_id,
