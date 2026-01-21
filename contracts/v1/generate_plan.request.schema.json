@@ -18,6 +18,11 @@
       "type": "string",
       "enum": ["low", "medium", "high"]
     },
+    "tariff_mode": {
+      "type": "string",
+      "enum": ["ekonomik", "normal"],
+      "default": "normal"
+    },
     "prep_max_minutes": {
       "type": "integer",
       "minimum": 0

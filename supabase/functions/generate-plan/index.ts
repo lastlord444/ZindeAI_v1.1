@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-// Note: Static imports are removed to prevent boot-time crashes if engine code is incompatible.
-// using dynamic imports inside the handler.
-
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -14,20 +11,15 @@ serve(async (req) => {
     }
 
     try {
-        // Dynamic imports for improved reliability during boot
-        const { PlanService } = await import("../_shared/engine/services/planService.ts");
-        const { MealPicker } = await import("../_shared/engine/services/mealPicker.ts");
-
-        // Import AJV dependencies dynamically
         const Ajv = (await import("https://esm.sh/ajv@8.12.0")).default;
         const addFormats = (await import("https://esm.sh/ajv-formats@2.1.1")).default;
-
-        // Import Supabase Client
         const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.4");
-
-        // Load Schema
         const { REQUEST_SCHEMA } = await import("./request_schema.ts");
-        const requestSchema = REQUEST_SCHEMA;
+
+        // Supabase Client
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         let requestJson;
         try {
@@ -39,51 +31,108 @@ serve(async (req) => {
             );
         }
 
-        // Validate
+        // Validate Schema
         const ajv = new Ajv({ allErrors: true });
         addFormats(ajv);
-        const validate = ajv.compile(requestSchema);
-        const valid = validate(requestJson);
-
-        if (!valid) {
+        const validate = ajv.compile(REQUEST_SCHEMA);
+        if (!validate(requestJson)) {
             return new Response(
                 JSON.stringify({
                     error: "INVALID_REQUEST",
-                    message: "Request contract validation failed",
-                    details: validate.errors?.map((err: any) => ({
-                        path: err.instancePath,
-                        message: err.message
-                    }))
+                    message: "Validation failed",
+                    details: validate.errors
                 }),
                 { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
-        // Generate Full 7-Day Mock Plan (Strict Schema Compliant)
+        const tariffMode = requestJson.tariff_mode || 'normal';
+        const goalTag = requestJson.goal_tag;
         const daysCount = 7;
         const mealTypes = ["breakfast", "snack1", "lunch", "snack2", "dinner", "snack3"];
-        // Helper to formatting date YYYY-MM-DD
+        // Helper mapping for DB meal_type
+        const dbMealTypes: Record<string, string> = {
+            "breakfast": "kahvalti",
+            "snack1": "ara_ogun_1",
+            "lunch": "ogle",
+            "snack2": "ara_ogun_2",
+            "dinner": "aksam",
+            "snack3": "gece_atistirmasi"
+        };
+
+
+        const selectMeal = async (mType: string, excludedIds: string[] = []) => {
+            const dbType = dbMealTypes[mType];
+            let query = supabase
+                .from('meals_with_cost_v')
+                .select('meal_id, meal_cost_try, price_tier')
+                .eq('goal_tag', goalTag)
+                .eq('meal_type', dbType)
+                .eq('price_tier', tariffMode);
+
+            if (excludedIds.length > 0) {
+                query = query.not('meal_id', 'in', `(${excludedIds.join(',')})`);
+            }
+
+            // Random selection via limit (MVP)
+            // Ideally we use RPC or improved random, but here we pick first or random?
+            // Since we can't easily random sort in view without RPC, we fetch first simple.
+            // Or fetch few and pick random in code.
+            const { data, error } = await query.limit(10);
+
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                // Fallback: try finding any meal to avoid crash, or throw?
+                // Throwing allows us to see missing data issues.
+                throw new Error(`No meals found for ${goalTag}/${dbType}/${tariffMode}`);
+            }
+
+            // Pick random
+            return data[Math.floor(Math.random() * data.length)];
+        };
+
+
+        const days = [];
         const getShiftedDate = (start: string, offset: number) => {
             const d = new Date(start);
             d.setDate(d.getDate() + offset);
             return d.toISOString().split('T')[0];
         };
 
-        const days = [];
-
         for (let d = 0; d < daysCount; d++) {
             const currentMeals = [];
             for (const type of mealTypes) {
+                const mainMeal = await selectMeal(type);
+                const alt1 = await selectMeal(type, [mainMeal.meal_id]);
+                const alt2 = await selectMeal(type, [mainMeal.meal_id, alt1.meal_id]);
+
+                // We need extended details (kcal etc) which might not be in the view?
+                // The schema response requires kcal, p, c, f, etc.
+                // The view only has cost and tier.
+                // We need to fetch details from `meal_totals` view maybe?
+                // Or join/fetch.
+                // Let's assume we fetch details from `meal_totals` for the selected IDs.
+
+                const { data: details } = await supabase
+                    .from('meal_totals')
+                    .select('*')
+                    .in('meal_id', [mainMeal.meal_id, alt1.meal_id, alt2.meal_id]);
+
+                // Map details back
+                const findDetail = (id: string) => details?.find((x: any) => x.meal_id === id) || {};
+
+                const m = findDetail(mainMeal.meal_id);
+
                 currentMeals.push({
-                    meal_id: `00000000-0000-0000-0000-${String(d + 1).padStart(12, '0')}`, // Mock UUID
+                    meal_id: mainMeal.meal_id,
                     meal_type: type,
-                    kcal: 300 + (d * 10),
-                    p: 20,
-                    c: 40,
-                    f: 10,
-                    estimated_cost_try: 50,
-                    alt1_meal_id: `11111111-0000-0000-0000-${String(d + 1).padStart(12, '0')}`,
-                    alt2_meal_id: `22222222-0000-0000-0000-${String(d + 1).padStart(12, '0')}`
+                    kcal: Number(m.total_kcal || 0),
+                    p: Number(m.total_protein || 0),
+                    c: Number(m.total_carbs || 0),
+                    f: Number(m.total_fat || 0),
+                    estimated_cost_try: Number(m.total_cost_try || 0),
+                    alt1_meal_id: alt1.meal_id,
+                    alt2_meal_id: alt2.meal_id
                 });
             }
             days.push({
@@ -92,34 +141,21 @@ serve(async (req) => {
             });
         }
 
-        const mockPlan = {
-            plan_id: "99999999-9999-9999-9999-999999999999",
+        const plan = {
+            plan_id: crypto.randomUUID(),
             week_start: requestJson.week_start,
             days: days
         };
 
         return new Response(
-            JSON.stringify(mockPlan),
+            JSON.stringify(plan),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
+
     } catch (error: any) {
-        const isDev = Deno.env.get('ENVIRONMENT') === 'development' || Deno.env.get('SUPABASE_URL')?.includes('localhost');
-
-        const errorResponse: any = {
-            error: "RUNTIME_ERROR",
-            message: String(error?.message)
-        };
-
-        if (isDev) {
-            errorResponse.stack = String(error?.stack);
-        }
-
         return new Response(
-            JSON.stringify(errorResponse),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 500
-            },
+            JSON.stringify({ error: "RUNTIME_ERROR", message: String(error?.message), stack: String(error?.stack) }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         )
     }
 })
